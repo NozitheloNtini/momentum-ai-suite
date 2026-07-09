@@ -18,6 +18,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { mockSummarizeMeeting, type MeetingSummary } from "@/lib/mock-ai";
+import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/meeting-notes")({
   head: () => ({
