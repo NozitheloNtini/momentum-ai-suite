@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TaskPlannerRouteImport } from './routes/task-planner'
 import { Route as MeetingNotesRouteImport } from './routes/meeting-notes'
+import { Route as ChatRouteImport } from './routes/chat'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TaskPlannerRoute = TaskPlannerRouteImport.update({
@@ -23,6 +24,11 @@ const MeetingNotesRoute = MeetingNotesRouteImport.update({
   path: '/meeting-notes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChatRoute = ChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -31,30 +37,34 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/task-planner': typeof TaskPlannerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/task-planner': typeof TaskPlannerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/chat': typeof ChatRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/task-planner': typeof TaskPlannerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/meeting-notes' | '/task-planner'
+  fullPaths: '/' | '/chat' | '/meeting-notes' | '/task-planner'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/meeting-notes' | '/task-planner'
-  id: '__root__' | '/' | '/meeting-notes' | '/task-planner'
+  to: '/' | '/chat' | '/meeting-notes' | '/task-planner'
+  id: '__root__' | '/' | '/chat' | '/meeting-notes' | '/task-planner'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChatRoute: typeof ChatRoute
   MeetingNotesRoute: typeof MeetingNotesRoute
   TaskPlannerRoute: typeof TaskPlannerRoute
 }
@@ -75,6 +85,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeetingNotesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/chat': {
+      id: '/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -87,6 +104,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChatRoute: ChatRoute,
   MeetingNotesRoute: MeetingNotesRoute,
   TaskPlannerRoute: TaskPlannerRoute,
 }
