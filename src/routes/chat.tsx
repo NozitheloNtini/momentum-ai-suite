@@ -6,6 +6,7 @@ import { Disclaimer } from "@/components/disclaimer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { mockChat } from "@/lib/mock-ai";
+import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/chat")({
   head: () => ({
