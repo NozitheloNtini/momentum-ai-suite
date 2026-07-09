@@ -1,131 +1,364 @@
-# Momentum AI
+# 🚀 Momentum AI
 
-A modern, responsive SaaS web application that helps professionals save time by using AI to automate common workplace tasks. Momentum AI feels like a polished enterprise productivity platform — think Notion AI, Microsoft Copilot, or ChatGPT Enterprise.
+> An AI-powered workplace productivity platform designed to help professionals streamline meetings, organize tasks, and work more efficiently.
 
-> **Status:** Interactive prototype with placeholder AI functionality that can easily be connected to a real AI API.
+Momentum AI is a modern, responsive SaaS web application that leverages AI to automate common workplace tasks. Inspired by platforms like Notion AI, Microsoft Copilot, and ChatGPT Enterprise, it combines intelligent automation with a clean, intuitive user experience.
+
+> **Status:** Interactive prototype with placeholder AI functionality. The application is architected for seamless integration with real AI providers such as OpenAI, Anthropic, or Google Gemini.
 
 ---
 
-## ✨ Features
+# 📖 About
 
-### 📝 Meeting Notes Summarizer
-Paste raw meeting notes or a transcript and get a structured, executive-ready summary:
-- Executive summary
-- Key discussion points
-- Action items with owner, priority, and deadline
-- Decisions made
-- Risks & follow-ups
+Momentum AI was built to demonstrate how artificial intelligence can enhance workplace productivity through intelligent automation.
 
-### ✅ AI Task Planner
-Turn a messy task list into a focused day:
-- Eisenhower Matrix classification (Do / Schedule / Delegate / Eliminate)
-- Prioritized focus order with rationale
-- Time-blocked daily schedule with buffers
-- Risk callouts for tight deadlines
+The project focuses on:
 
-### 💬 AI Assistant Chat
-A conversational assistant for everyday workplace writing:
-- Persistent chat history
-- Auto-scroll and typing indicators
-- Suggested prompts to get started
-- Helpful for drafting emails, summaries, agendas, and status updates
+- AI-assisted meeting documentation
+- Intelligent task prioritization
+- Workplace AI assistance
+- Modern SaaS UI/UX
+- Responsive web design
+- Clean, scalable architecture
+- Future-ready AI integration
 
-### ⚙️ Settings
+It serves as both a portfolio project and a foundation for a production-ready AI productivity platform.
+
+---
+
+# ✨ Features
+
+## 🏠 Smart Onboarding
+
+Momentum AI is designed with a user-friendly onboarding experience.
+
+### Current
+- Interactive dashboard
+- Demo AI workflows
+- Responsive navigation
+- Professional SaaS interface
+
+### Planned
+- Continue as Guest
+- User Sign Up & Login
+- Secure authentication with Supabase
+- Personalized dashboards
+- Persistent user data
+- Session management
+
+---
+
+## 📝 Meeting Notes Summarizer
+
+Transform raw meeting notes into structured business documentation.
+
+### Features
+
+- Executive Summary
+- Key Discussion Points
+- Action Items
+- Task Owner
+- Priority Level
+- Deadlines
+- Decisions Made
+- Risks & Follow-ups
+
+Designed using structured prompt engineering to generate concise, professional, and actionable outputs.
+
+---
+
+## ✅ AI Task Planner
+
+Convert an overwhelming to-do list into a prioritized action plan.
+
+### Features
+
+- Eisenhower Matrix classification
+- Intelligent task prioritization
+- Daily scheduling
+- Time-blocking recommendations
+- Focus order suggestions
+- High-risk deadline detection
+- Priority badges
+- Schedule visualization
+
+---
+
+## 💬 AI Workplace Assistant
+
+A conversational AI assistant built for professional communication.
+
+### Capabilities
+
+- Email drafting
+- Email summarization
+- Meeting agenda generation
+- Report improvement
+- Workplace writing assistance
+- General productivity support
+
+### UI Features
+
+- Chat history
+- Suggested prompts
+- Typing indicator
+- Auto-scroll
+- Clear conversation option
+
+---
+
+## 📊 Dashboard
+
+A centralized productivity dashboard providing quick access to every AI tool.
+
+Includes:
+
+- Meeting Notes card
+- AI Task Planner card
+- AI Assistant card
+- Recent Activity
+- Productivity Tips
+- AI Usage Statistics (prototype)
+
+---
+
+## ⚙️ Settings
+
+Configure the application experience.
+
+Current options include:
+
 - Profile preferences
-- Placeholder AI API integration settings — ready to wire up to a real provider
+- Placeholder AI configuration
+- Future AI provider settings
 
 ---
 
-## 🎨 Design
+# ⚠️ Disclaimer
 
-- Clean, professional blue / white / gray palette
-- Sidebar + top-bar dashboard layout
-- Rounded corners, consistent spacing, and subtle micro-interactions
-- Fully responsive — desktop, tablet, and mobile
-- Built with shadcn/ui components and Tailwind CSS v4
+> **AI-generated content may require human review before being used for business decisions or official communication.**
 
 ---
 
-## 🛠 Tech Stack
+# 🎨 Design
 
-- **Framework:** [TanStack Start](https://tanstack.com/start) (React 19 + Vite 7)
-- **Routing:** TanStack Router (file-based)
-- **Styling:** Tailwind CSS v4
-- **UI Components:** shadcn/ui + Radix
-- **Language:** TypeScript
-- **Package Manager:** Bun
+Momentum AI follows modern SaaS design principles.
+
+### Design Highlights
+
+- Clean and minimal interface
+- Professional blue, white, and gray color palette
+- Sidebar navigation
+- Dashboard layout
+- Card-based UI
+- Rounded corners
+- Subtle shadows
+- Smooth micro-interactions
+- Responsive design for desktop, tablet, and mobile
+- Accessible color contrast
+
+Built using **shadcn/ui** and **Tailwind CSS v4**.
 
 ---
 
-## 🚀 Getting Started
+# 🛠 Tech Stack
 
-### Prerequisites
-- [Bun](https://bun.sh) (or Node.js 20+)
+| Technology | Purpose |
+|------------|---------|
+| React 19 | Frontend Framework |
+| TanStack Start | Full-stack React Framework |
+| TanStack Router | File-based Routing |
+| TypeScript | Type Safety |
+| Tailwind CSS v4 | Styling |
+| shadcn/ui | UI Components |
+| Radix UI | Accessible UI Primitives |
+| Bun | Package Manager |
+| Vite 7 | Build Tool |
 
-### Install
+---
+
+# 🚀 Getting Started
+
+## Prerequisites
+
+Install one of the following:
+
+- Bun (recommended)
+- Node.js 20+
+
+---
+
+## Installation
+
 ```bash
 bun install
 ```
 
-### Run the dev server
+---
+
+## Start Development Server
+
 ```bash
 bun run dev
 ```
 
-The app will be available at `http://localhost:8080`.
+The application will be available at:
 
-### Build for production
+```
+http://localhost:8080
+```
+
+---
+
+## Production Build
+
 ```bash
 bun run build
 ```
 
 ---
 
-## 📁 Project Structure
+# 📁 Project Structure
 
 ```
 src/
-├── components/        # Reusable UI (sidebar, top bar, disclaimer, shadcn/ui)
-├── hooks/             # Custom React hooks
+├── components/
+│   ├── Sidebar
+│   ├── TopBar
+│   ├── Dashboard Cards
+│   ├── Disclaimer
+│   └── Shared UI Components
+│
+├── hooks/
+│   └── Custom React Hooks
+│
 ├── lib/
-│   └── mock-ai.ts     # Mock AI service — swap for real LLM calls here
-├── routes/            # File-based routes (TanStack Start)
-│   ├── __root.tsx     # App shell
-│   ├── index.tsx      # Dashboard
+│   └── mock-ai.ts
+│
+├── routes/
+│   ├── __root.tsx
+│   ├── index.tsx
 │   ├── meeting-notes.tsx
 │   ├── task-planner.tsx
 │   ├── chat.tsx
 │   └── settings.tsx
-└── styles.css         # Tailwind v4 theme & tokens
+│
+└── styles.css
 ```
 
 ---
 
-## 🤖 Connecting a Real AI Provider
+# 🤖 AI Architecture
 
-All AI logic is centralized in [`src/lib/mock-ai.ts`](src/lib/mock-ai.ts). Each mock function includes an inline prompt spec (role, task, output format) documenting the intended LLM behavior.
+Momentum AI currently uses a mock AI service located in:
 
-To go live, replace the `mock*` functions with real calls (e.g. OpenAI, Anthropic, or the Lovable AI Gateway) — the UI components require no changes.
+```
+src/lib/mock-ai.ts
+```
+
+Each feature is built around structured prompt engineering, making it easy to replace placeholder logic with real AI providers.
+
+Supported future integrations include:
+
+- OpenAI
+- Anthropic Claude
+- Google Gemini
+- Azure OpenAI
+- Lovable AI Gateway
+
+Example:
 
 ```ts
-// Example: swap mockSummarizeMeeting with a real LLM call
 export async function summarizeMeeting(title: string, notes: string) {
   const res = await fetch("/api/summarize", {
     method: "POST",
     body: JSON.stringify({ title, notes }),
   });
+
   return res.json();
 }
 ```
 
----
-
-## 📄 License
-
-MIT — free to use, modify, and build on.
+Because the AI layer is isolated, no UI changes are required when switching to a production AI provider.
 
 ---
 
-## 🙌 Acknowledgements
+# 🔮 Roadmap
 
-Built with [Lovable](https://lovable.dev).
+Planned improvements include:
+
+- Guest Mode
+- User Authentication (Supabase Auth)
+- Personal dashboards
+- Persistent cloud storage
+- Chat history synchronization
+- Calendar integration
+- Microsoft Outlook integration
+- Microsoft Teams integration
+- Google Calendar support
+- Export summaries to PDF
+- Export meeting notes to Word
+- Team collaboration
+- Dark Mode
+- AI analytics dashboard
+- Mobile optimization
+
+---
+
+# 📸 Screenshots
+
+Add screenshots of the application here.
+
+Suggested images:
+
+- Landing Page
+- Dashboard
+- Meeting Notes Summarizer
+- AI Task Planner
+- AI Assistant
+- Mobile Responsive View
+
+---
+
+# 🎯 Project Goals
+
+This project demonstrates practical skills in:
+
+- Modern React development
+- Responsive UI design
+- Component-based architecture
+- TypeScript
+- Prompt engineering
+- AI-ready application design
+- SaaS product development
+- User experience design
+- Scalable frontend architecture
+
+---
+
+# 📄 License
+
+This project is licensed under the **MIT License**.
+
+Feel free to use, modify, and build upon it.
+
+---
+
+# 🙌 Acknowledgements
+
+Built with:
+
+- ❤️ Lovable
+- React
+- TanStack Start
+- Tailwind CSS
+- shadcn/ui
+- Radix UI
+
+---
+
+## ⭐ Future Vision
+
+Momentum AI aims to evolve into a full-featured AI workplace productivity platform where users can securely manage meetings, organize work, collaborate efficiently, and leverage AI to reduce repetitive administrative tasks.
+
+The long-term vision is to deliver a production-ready SaaS experience that combines intelligent automation with an intuitive user interface for modern professionals.
