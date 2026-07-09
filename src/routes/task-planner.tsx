@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mockPlanTasks, type PlannerInput, type PlannerResult, type Quadrant } from "@/lib/mock-ai";
+import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/task-planner")({
   head: () => ({
