@@ -68,9 +68,16 @@ function Chat() {
     <>
       <TopBar title="AI Workplace Assistant" subtitle="Draft, summarize, and refine — instantly" />
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col p-4 md:p-6">
-        <div className="mb-3 flex items-center justify-between">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <Disclaimer className="flex-1" />
-          <Button variant="ghost" size="sm" onClick={clear} className="ml-3 shrink-0">
+          <SaveButton
+            kind="chat"
+            title={`Chat · ${new Date().toLocaleDateString()}`}
+            data={messages}
+            featureLabel="this conversation"
+            disabled={messages.length <= 1}
+          />
+          <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
             <Trash2 className="mr-1.5 h-4 w-4" /> Clear
           </Button>
         </div>
