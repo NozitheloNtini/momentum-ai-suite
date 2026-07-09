@@ -12,7 +12,9 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TaskPlannerRouteImport } from './routes/task-planner'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as MeetingNotesRouteImport } from './routes/meeting-notes'
+import { Route as LandingRouteImport } from './routes/landing'
 import { Route as ChatRouteImport } from './routes/chat'
+import { Route as AuthRouteImport } from './routes/auth'
 import { Route as IndexRouteImport } from './routes/index'
 
 const TaskPlannerRoute = TaskPlannerRouteImport.update({
@@ -30,9 +32,19 @@ const MeetingNotesRoute = MeetingNotesRouteImport.update({
   path: '/meeting-notes',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LandingRoute = LandingRouteImport.update({
+  id: '/landing',
+  path: '/landing',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ChatRoute = ChatRouteImport.update({
   id: '/chat',
   path: '/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -43,14 +55,18 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
+  '/landing': typeof LandingRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
+  '/landing': typeof LandingRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
@@ -58,20 +74,38 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
   '/chat': typeof ChatRoute
+  '/landing': typeof LandingRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/meeting-notes' | '/settings' | '/task-planner'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/landing'
+    | '/meeting-notes'
+    | '/settings'
+    | '/task-planner'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/meeting-notes' | '/settings' | '/task-planner'
+  to:
+    | '/'
+    | '/auth'
+    | '/chat'
+    | '/landing'
+    | '/meeting-notes'
+    | '/settings'
+    | '/task-planner'
   id:
     | '__root__'
     | '/'
+    | '/auth'
     | '/chat'
+    | '/landing'
     | '/meeting-notes'
     | '/settings'
     | '/task-planner'
@@ -79,7 +113,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthRoute: typeof AuthRoute
   ChatRoute: typeof ChatRoute
+  LandingRoute: typeof LandingRoute
   MeetingNotesRoute: typeof MeetingNotesRoute
   SettingsRoute: typeof SettingsRoute
   TaskPlannerRoute: typeof TaskPlannerRoute
@@ -108,11 +144,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MeetingNotesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/landing': {
+      id: '/landing'
+      path: '/landing'
+      fullPath: '/landing'
+      preLoaderRoute: typeof LandingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/chat': {
       id: '/chat'
       path: '/chat'
       fullPath: '/chat'
       preLoaderRoute: typeof ChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -127,7 +177,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthRoute: AuthRoute,
   ChatRoute: ChatRoute,
+  LandingRoute: LandingRoute,
   MeetingNotesRoute: MeetingNotesRoute,
   SettingsRoute: SettingsRoute,
   TaskPlannerRoute: TaskPlannerRoute,
