@@ -210,9 +210,18 @@ function SummaryView({ data }: { data: MeetingSummary }) {
             <CardDescription>Executive summary</CardDescription>
             <CardTitle className="truncate text-lg">{data.title}</CardTitle>
           </div>
-          <Button size="sm" variant="ghost" onClick={copy}>
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-          </Button>
+          <div className="flex items-center gap-1">
+            <SaveButton
+              kind="meeting_note"
+              title={data.title || "Meeting summary"}
+              data={data}
+              featureLabel="this summary"
+              variant="ghost"
+            />
+            <Button size="sm" variant="ghost" onClick={copy}>
+              {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <p className="text-sm leading-relaxed text-foreground/90">{data.executiveSummary}</p>
