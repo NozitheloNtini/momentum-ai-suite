@@ -129,13 +129,29 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset className="flex min-h-screen flex-col bg-background">
-          <Outlet />
-        </SidebarInset>
-      </SidebarProvider>
-      <Toaster richColors position="top-right" />
+      <AuthProvider>
+        <AppFrame />
+        <Toaster richColors position="top-right" />
+      </AuthProvider>
     </QueryClientProvider>
+  );
+}
+
+function AppFrame() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { mode } = useAuth();
+  const bare = pathname === "/landing" || pathname === "/auth" || pathname === "/";
+
+  if (bare || mode === "signed_out" || mode === "loading") {
+    return <Outlet />;
+  }
+
+  return (
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="flex min-h-screen flex-col bg-background">
+        <Outlet />
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
