@@ -90,10 +90,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         property: "og:description",
         content:
-          "AI-powered meeting summaries, prioritized daily plans, and a workplace chat assistant in one polished workspace.",
+          "Momentum AI automates meeting summaries, task planning, and workplace writing so professionals get hours back each week.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Momentum AI — Workplace productivity assistant" },
+      { name: "twitter:description", content: "Momentum AI automates meeting summaries, task planning, and workplace writing so professionals get hours back each week." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/92086827-7f1a-4efb-83af-4123d4b2fb12/id-preview-ef3cb619--90b303e6-36dd-4009-adb1-241e5b58ec5b.lovable.app-1783599623176.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/92086827-7f1a-4efb-83af-4123d4b2fb12/id-preview-ef3cb619--90b303e6-36dd-4009-adb1-241e5b58ec5b.lovable.app-1783599623176.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
