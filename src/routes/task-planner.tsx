@@ -166,7 +166,17 @@ function TaskPlanner() {
             </CardContent>
           </Card>
         ) : result ? (
-          <PlanView result={result} />
+          <>
+            <div className="flex justify-end">
+              <SaveButton
+                kind="task_plan"
+                title={`Plan · ${new Date().toLocaleDateString()}`}
+                data={result}
+                featureLabel="this plan"
+              />
+            </div>
+            <PlanView result={result} />
+          </>
         ) : null}
       </div>
     </>
