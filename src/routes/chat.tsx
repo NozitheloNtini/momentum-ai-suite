@@ -34,7 +34,7 @@ const SUGGESTIONS = [
 const GREETING: Msg = {
   id: "welcome",
   role: "assistant",
-  text: "Hi Alex — I'm your workplace assistant. Ask me to summarize an email, draft a reply, prep an agenda, or tighten a report.",
+  text: "Hi there — I'm your workplace assistant. Ask me to summarize an email, draft a reply, prep an agenda, or tighten a report.",
 };
 
 function Chat() {
