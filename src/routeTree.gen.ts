@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TaskPlannerRouteImport } from './routes/task-planner'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as MeetingNotesRouteImport } from './routes/meeting-notes'
+import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LandingRouteImport } from './routes/landing'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChatRouteImport } from './routes/chat'
@@ -31,6 +32,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const MeetingNotesRoute = MeetingNotesRouteImport.update({
   id: '/meeting-notes',
   path: '/meeting-notes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LibraryRoute = LibraryRouteImport.update({
+  id: '/library',
+  path: '/library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LandingRoute = LandingRouteImport.update({
@@ -65,6 +71,7 @@ export interface FileRoutesByFullPath {
   '/chat': typeof ChatRoute
   '/dashboard': typeof DashboardRoute
   '/landing': typeof LandingRoute
+  '/library': typeof LibraryRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
@@ -75,6 +82,7 @@ export interface FileRoutesByTo {
   '/chat': typeof ChatRoute
   '/dashboard': typeof DashboardRoute
   '/landing': typeof LandingRoute
+  '/library': typeof LibraryRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
@@ -86,6 +94,7 @@ export interface FileRoutesById {
   '/chat': typeof ChatRoute
   '/dashboard': typeof DashboardRoute
   '/landing': typeof LandingRoute
+  '/library': typeof LibraryRoute
   '/meeting-notes': typeof MeetingNotesRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/dashboard'
     | '/landing'
+    | '/library'
     | '/meeting-notes'
     | '/settings'
     | '/task-planner'
@@ -108,6 +118,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/dashboard'
     | '/landing'
+    | '/library'
     | '/meeting-notes'
     | '/settings'
     | '/task-planner'
@@ -118,6 +129,7 @@ export interface FileRouteTypes {
     | '/chat'
     | '/dashboard'
     | '/landing'
+    | '/library'
     | '/meeting-notes'
     | '/settings'
     | '/task-planner'
@@ -129,6 +141,7 @@ export interface RootRouteChildren {
   ChatRoute: typeof ChatRoute
   DashboardRoute: typeof DashboardRoute
   LandingRoute: typeof LandingRoute
+  LibraryRoute: typeof LibraryRoute
   MeetingNotesRoute: typeof MeetingNotesRoute
   SettingsRoute: typeof SettingsRoute
   TaskPlannerRoute: typeof TaskPlannerRoute
@@ -155,6 +168,13 @@ declare module '@tanstack/react-router' {
       path: '/meeting-notes'
       fullPath: '/meeting-notes'
       preLoaderRoute: typeof MeetingNotesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/library': {
+      id: '/library'
+      path: '/library'
+      fullPath: '/library'
+      preLoaderRoute: typeof LibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/landing': {
@@ -201,6 +221,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChatRoute: ChatRoute,
   DashboardRoute: DashboardRoute,
   LandingRoute: LandingRoute,
+  LibraryRoute: LibraryRoute,
   MeetingNotesRoute: MeetingNotesRoute,
   SettingsRoute: SettingsRoute,
   TaskPlannerRoute: TaskPlannerRoute,
