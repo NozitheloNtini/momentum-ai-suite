@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { mockPlanTasks, type PlannerInput, type PlannerResult, type Quadrant } from "@/lib/mock-ai";
+import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/task-planner")({
   head: () => ({
@@ -166,7 +167,17 @@ function TaskPlanner() {
             </CardContent>
           </Card>
         ) : result ? (
-          <PlanView result={result} />
+          <>
+            <div className="flex justify-end">
+              <SaveButton
+                kind="task_plan"
+                title={`Plan · ${new Date().toLocaleDateString()}`}
+                data={result}
+                featureLabel="this plan"
+              />
+            </div>
+            <PlanView result={result} />
+          </>
         ) : null}
       </div>
     </>
