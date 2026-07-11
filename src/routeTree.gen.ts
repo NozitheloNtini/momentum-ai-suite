@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TaskPlannerRouteImport } from './routes/task-planner'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MeetingNotesRouteImport } from './routes/meeting-notes'
 import { Route as LibraryRouteImport } from './routes/library'
 import { Route as LandingRouteImport } from './routes/landing'
@@ -27,6 +28,11 @@ const TaskPlannerRoute = TaskPlannerRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MeetingNotesRoute = MeetingNotesRouteImport.update({
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/landing': typeof LandingRoute
   '/library': typeof LibraryRoute
   '/meeting-notes': typeof MeetingNotesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/landing': typeof LandingRoute
   '/library': typeof LibraryRoute
   '/meeting-notes': typeof MeetingNotesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/landing': typeof LandingRoute
   '/library': typeof LibraryRoute
   '/meeting-notes': typeof MeetingNotesRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/task-planner': typeof TaskPlannerRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/landing'
     | '/library'
     | '/meeting-notes'
+    | '/reset-password'
     | '/settings'
     | '/task-planner'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/landing'
     | '/library'
     | '/meeting-notes'
+    | '/reset-password'
     | '/settings'
     | '/task-planner'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/landing'
     | '/library'
     | '/meeting-notes'
+    | '/reset-password'
     | '/settings'
     | '/task-planner'
   fileRoutesById: FileRoutesById
@@ -143,6 +155,7 @@ export interface RootRouteChildren {
   LandingRoute: typeof LandingRoute
   LibraryRoute: typeof LibraryRoute
   MeetingNotesRoute: typeof MeetingNotesRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   TaskPlannerRoute: typeof TaskPlannerRoute
 }
@@ -161,6 +174,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/meeting-notes': {
@@ -223,6 +243,7 @@ const rootRouteChildren: RootRouteChildren = {
   LandingRoute: LandingRoute,
   LibraryRoute: LibraryRoute,
   MeetingNotesRoute: MeetingNotesRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   TaskPlannerRoute: TaskPlannerRoute,
 }

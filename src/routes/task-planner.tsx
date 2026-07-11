@@ -60,14 +60,12 @@ const TITLE_PLACEHOLDERS = [
   "Schedule stakeholder meeting",
 ];
 
-const emptyRow = (i = 0): Draft => ({
+const emptyRow = (): Draft => ({
   id: crypto.randomUUID(),
   title: "",
   deadline: "",
   priority: "Medium",
   duration: 30,
-  // stash index for placeholder rotation via a symbol-free approach
-  ...({ __idx: i } as object),
 });
 
 function TaskPlanner() {
