@@ -69,7 +69,7 @@ const emptyRow = (): Draft => ({
 });
 
 function TaskPlanner() {
-  const [tasks, setTasks] = useState<Draft[]>([emptyRow(0)]);
+  const [tasks, setTasks] = useState<Draft[]>([emptyRow()]);
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +77,7 @@ function TaskPlanner() {
   const update = (id: string, patch: Partial<Draft>) =>
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
-  const add = () => setTasks((ts) => [...ts, emptyRow(ts.length)]);
+  const add = () => setTasks((ts) => [...ts, emptyRow()]);
   const remove = (id: string) =>
     setTasks((ts) => (ts.length > 1 ? ts.filter((t) => t.id !== id) : ts));
 
