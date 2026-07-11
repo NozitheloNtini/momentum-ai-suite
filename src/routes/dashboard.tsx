@@ -91,7 +91,7 @@ function Dashboard() {
         <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-background to-background p-6 shadow-soft md:p-8">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              <Zap className="h-3 w-3" /> Your workspace is 27% faster this week
+              <Zap className="h-3 w-3" /> AI-powered workplace productivity
             </div>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight md:text-3xl">
               Save two hours a day with Momentum AI
