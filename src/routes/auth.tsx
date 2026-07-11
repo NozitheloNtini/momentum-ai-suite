@@ -85,6 +85,8 @@ function SignInForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const navigate = useNavigate();
 
   const submit = async (e: React.FormEvent) => {
@@ -98,6 +100,24 @@ function SignInForm() {
     }
     toast.success("Welcome back");
     navigate({ to: "/dashboard" });
+  };
+
+  const sendReset = async () => {
+    if (!email) {
+      toast.error("Enter your email above first");
+      return;
+    }
+    setResetLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setResetLoading(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Password reset link sent — check your email");
+    setForgotOpen(false);
   };
 
   return (
@@ -114,7 +134,16 @@ function SignInForm() {
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="si-password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="si-password">Password</Label>
+          <button
+            type="button"
+            onClick={() => setForgotOpen((v) => !v)}
+            className="text-xs text-primary hover:underline"
+          >
+            Forgot password?
+          </button>
+        </div>
         <Input
           id="si-password"
           type="password"
@@ -123,6 +152,21 @@ function SignInForm() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
+        {forgotOpen && (
+          <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs text-muted-foreground">
+            We'll email a reset link to <span className="font-medium">{email || "your address"}</span>.
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-2 w-full"
+              onClick={sendReset}
+              disabled={resetLoading}
+            >
+              {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Send reset link"}
+            </Button>
+          </div>
+        )}
       </div>
       <Button type="submit" className="w-full" disabled={loading}>
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Sign in"}
@@ -130,6 +174,7 @@ function SignInForm() {
     </form>
   );
 }
+
 
 function SignUpForm() {
   const [name, setName] = useState("");

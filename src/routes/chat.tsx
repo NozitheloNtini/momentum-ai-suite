@@ -1,11 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { Send, Sparkles, Trash2, User } from "lucide-react";
+import { toast } from "sonner";
+import { Send, Sparkles, Trash2, User, AlertTriangle } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { mockChat } from "@/lib/mock-ai";
+import { chatReply } from "@/lib/ai.functions";
 import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/chat")({
@@ -25,23 +26,24 @@ export const Route = createFileRoute("/chat")({
 type Msg = { id: string; role: "user" | "assistant"; text: string };
 
 const SUGGESTIONS = [
-  "Summarize this email",
-  "Write a professional reply",
-  "Improve this report",
-  "Draft meeting agenda",
-  "Explain this project update",
+  "Draft a follow-up email to a client about a delayed deliverable",
+  "Rewrite this sentence more professionally: ...",
+  "Create a 30-minute agenda for a product kickoff",
+  "Summarize the key points of this document: ...",
+  "Explain OKRs vs KPIs in simple terms",
 ];
 
 const GREETING: Msg = {
   id: "welcome",
   role: "assistant",
-  text: "Hi there — I'm your workplace assistant. Ask me to summarize an email, draft a reply, prep an agenda, or tighten a report.",
+  text: "Hi — I'm your workplace assistant. Paste an email, a document, a question, or a rough draft, and I'll help you handle it.",
 };
 
 function Chat() {
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,18 +54,36 @@ function Chat() {
     const trimmed = text.trim();
     if (!trimmed || typing) return;
     const userMsg: Msg = { id: crypto.randomUUID(), role: "user", text: trimmed };
-    setMessages((m) => [...m, userMsg]);
+    const nextMessages = [...messages, userMsg];
+    setMessages(nextMessages);
     setInput("");
     setTyping(true);
+    setError(null);
     try {
-      const reply = await mockChat(trimmed);
-      setMessages((m) => [...m, { id: crypto.randomUUID(), role: "assistant", text: reply }]);
+      const history = nextMessages
+        .filter((m) => m.id !== "welcome")
+        .map((m) => ({ role: m.role, content: m.text }));
+      const { reply } = await chatReply({ data: { history } });
+      setMessages((m) => [
+        ...m,
+        { id: crypto.randomUUID(), role: "assistant", text: reply },
+      ]);
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "AI service unavailable. Connect an OpenAI-compatible model to enable AI-generated responses.";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setTyping(false);
     }
   };
 
-  const clear = () => setMessages([GREETING]);
+  const clear = () => {
+    setMessages([GREETING]);
+    setError(null);
+  };
 
   return (
     <>
@@ -93,6 +113,12 @@ function Chat() {
               <Bubble key={m.id} msg={m} />
             ))}
             {typing && <Typing />}
+            {error && !typing && (
+              <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -101,7 +127,7 @@ function Chat() {
             {SUGGESTIONS.map((s) => (
               <button
                 key={s}
-                onClick={() => send(s)}
+                onClick={() => setInput(s)}
                 className="rounded-full border border-border bg-card px-3 py-1.5 text-xs text-foreground shadow-soft transition hover:border-primary/40 hover:bg-primary/5"
               >
                 {s}

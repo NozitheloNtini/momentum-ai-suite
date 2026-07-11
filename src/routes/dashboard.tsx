@@ -51,11 +51,10 @@ const tools = [
   },
 ];
 
-const activity = [
-  { icon: FileText, text: "Summarized Q3 Planning Sync", time: "12 min ago" },
-  { icon: ListChecks, text: "Planned 6 tasks for Thursday", time: "1 hr ago" },
-  { icon: MessageSquare, text: "Drafted a professional reply", time: "Yesterday" },
-  { icon: FileText, text: "Summarized Design Review", time: "Yesterday" },
+const sampleActivity = [
+  { icon: FileText, text: "Meeting summary example", time: "Sample" },
+  { icon: ListChecks, text: "Task plan example", time: "Sample" },
+  { icon: MessageSquare, text: "Assistant reply example", time: "Sample" },
 ];
 
 const tips = [
@@ -92,7 +91,7 @@ function Dashboard() {
         <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/10 via-background to-background p-6 shadow-soft md:p-8">
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
-              <Zap className="h-3 w-3" /> Your workspace is 27% faster this week
+              <Zap className="h-3 w-3" /> AI-powered workplace productivity
             </div>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight md:text-3xl">
               Save two hours a day with Momentum AI
@@ -142,17 +141,22 @@ function Dashboard() {
 
         <div className="grid gap-4 lg:grid-cols-3">
           <Card className="lg:col-span-2 shadow-soft">
-            <CardHeader>
-              <CardTitle className="text-base">Recent activity</CardTitle>
-              <CardDescription>
-                {isGuest
-                  ? "Sample activity — sign up to keep a real history."
-                  : "What Momentum has helped you with lately."}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+              <div>
+                <CardTitle className="text-base">Recent activity</CardTitle>
+                <CardDescription>
+                  {isGuest
+                    ? "Sample data — sign up to keep a real history."
+                    : "Start using the tools above to build your activity feed."}
+                </CardDescription>
+              </div>
+              <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Sample data
+              </span>
             </CardHeader>
             <CardContent>
               <ul className="divide-y divide-border">
-                {activity.map((a, i) => (
+                {sampleActivity.map((a, i) => (
                   <li key={i} className="flex items-center gap-3 py-3 text-sm">
                     <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground">
                       <a.icon className="h-4 w-4" />
@@ -168,18 +172,24 @@ function Dashboard() {
             </CardContent>
           </Card>
 
+
           <div className="flex flex-col gap-4">
             <Card className="shadow-soft">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="h-4 w-4 text-primary" /> AI usage
-                </CardTitle>
-                <CardDescription>Monthly credit summary</CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="h-4 w-4 text-primary" /> AI usage
+                  </CardTitle>
+                  <CardDescription>Monthly credit summary</CardDescription>
+                </div>
+                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Sample data
+                </span>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Stat label="Summaries" value={18} max={30} />
-                <Stat label="Plans generated" value={11} max={20} />
-                <Stat label="Chat messages" value={142} max={500} />
+                <Stat label="Summaries" value={0} max={30} />
+                <Stat label="Plans generated" value={0} max={20} />
+                <Stat label="Chat messages" value={0} max={500} />
               </CardContent>
             </Card>
             <Card className="shadow-soft">

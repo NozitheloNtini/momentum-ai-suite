@@ -1,7 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { FileText, Upload, Sparkles, Loader2, Copy, Check } from "lucide-react";
+import {
+  FileText,
+  Upload,
+  Sparkles,
+  Loader2,
+  Copy,
+  Check,
+  Users,
+  Target,
+  Calendar,
+  AlertTriangle,
+} from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -17,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { mockSummarizeMeeting, type MeetingSummary } from "@/lib/mock-ai";
+import { summarizeMeeting, type MeetingSummary } from "@/lib/ai.functions";
 import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/meeting-notes")({
@@ -27,20 +38,19 @@ export const Route = createFileRoute("/meeting-notes")({
       {
         name: "description",
         content:
-          "Paste notes or upload a transcript and get an executive summary, key points, action items, decisions, and risks.",
+          "Paste notes or upload a transcript and get an executive summary, participants, decisions, action items, and risks.",
       },
     ],
   }),
   component: MeetingNotes,
 });
 
-const SAMPLE = `Kickoff Q3 planning. Priya walked through onboarding revamp scope; team agreed to prioritize the mobile flow first. Marcus flagged launch messaging is not aligned with product roadmap — will draft new narrative by next Monday. Dana confirmed analytics dashboards need refresh; owner set. Legal review pending on data-sharing terms. Decision: ship mobile release Oct 24 with limited beta.`;
-
 function MeetingNotes() {
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<MeetingSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const onUpload = async (f: File) => {
@@ -61,12 +71,17 @@ function MeetingNotes() {
     }
     setLoading(true);
     setResult(null);
+    setError(null);
     try {
-      const r = await mockSummarizeMeeting(title, notes);
+      const r = await summarizeMeeting({ data: { title, notes } });
       setResult(r);
       toast.success("Summary generated");
-    } catch {
-      toast.error("Something went wrong. Try again.");
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "AI service unavailable. Connect an OpenAI-compatible model to enable AI-generated responses.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -79,7 +94,6 @@ function MeetingNotes() {
         subtitle="Turn raw notes into a clean, shareable recap"
       />
       <div className="mx-auto grid w-full max-w-7xl gap-6 p-4 md:p-8 lg:grid-cols-5">
-        {/* Input */}
         <Card className="lg:col-span-2 shadow-soft h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -89,28 +103,19 @@ function MeetingNotes() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-muted-foreground">Meeting title</label>
+              <label className="text-xs font-medium text-muted-foreground">Meeting title (optional)</label>
               <Input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Q3 Planning Sync"
+                placeholder="e.g. Q3 Planning Sync"
               />
             </div>
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-medium text-muted-foreground">Notes</label>
-                <button
-                  type="button"
-                  onClick={() => setNotes(SAMPLE)}
-                  className="text-xs text-primary hover:underline"
-                >
-                  Load sample
-                </button>
-              </div>
+              <label className="text-xs font-medium text-muted-foreground">Transcript or notes</label>
               <Textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Paste raw meeting notes here…"
+                placeholder="Paste the raw meeting transcript or notes here…"
                 className="min-h-56 resize-y"
               />
             </div>
@@ -128,7 +133,7 @@ function MeetingNotes() {
               <Button onClick={onGenerate} disabled={loading} className="flex-1 min-w-40">
                 {loading ? (
                   <>
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Generating…
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Analyzing…
                   </>
                 ) : (
                   <>
@@ -141,9 +146,16 @@ function MeetingNotes() {
           </CardContent>
         </Card>
 
-        {/* Output */}
         <div className="lg:col-span-3 space-y-4">
-          {loading ? <LoadingSkeleton /> : result ? <SummaryView data={result} /> : <EmptyState />}
+          {loading ? (
+            <LoadingSkeleton />
+          ) : error ? (
+            <ErrorState message={error} />
+          ) : result ? (
+            <SummaryView data={result} />
+          ) : (
+            <EmptyState />
+          )}
         </div>
       </div>
     </>
@@ -158,9 +170,22 @@ function EmptyState() {
       </div>
       <h3 className="mt-4 text-base font-semibold">Your summary will appear here</h3>
       <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-        Add notes on the left and click Generate summary to get an executive recap, action items,
-        and risks.
+        Paste a transcript on the left and click Generate summary. The AI will only use what you provide — no invented names or tasks.
       </p>
+    </Card>
+  );
+}
+
+function ErrorState({ message }: { message: string }) {
+  return (
+    <Card className="border-destructive/30 bg-destructive/5 shadow-none">
+      <CardContent className="flex items-start gap-3 p-6 text-sm">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+        <div>
+          <div className="font-medium text-destructive">Could not generate summary</div>
+          <div className="mt-1 text-muted-foreground">{message}</div>
+        </div>
+      </CardContent>
     </Card>
   );
 }
@@ -191,12 +216,21 @@ function priorityBadge(p: "High" | "Medium" | "Low") {
   return <Badge variant="outline" className={cls}>{p}</Badge>;
 }
 
+const NA = "Not mentioned in the transcript.";
+const isMissing = (s: string) => !s || s.trim() === "" || s.trim() === NA;
+
 function SummaryView({ data }: { data: MeetingSummary }) {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
-    await navigator.clipboard.writeText(
-      `${data.title}\n\n${data.executiveSummary}\n\nKey points:\n${data.keyPoints.map((p) => "- " + p).join("\n")}`,
-    );
+    const lines = [
+      data.title,
+      "",
+      data.executiveSummary,
+      "",
+      "Key points:",
+      ...data.keyPoints.map((p) => "- " + p),
+    ];
+    await navigator.clipboard.writeText(lines.join("\n"));
     setCopied(true);
     toast.success("Copied summary");
     setTimeout(() => setCopied(false), 1500);
@@ -228,19 +262,58 @@ function SummaryView({ data }: { data: MeetingSummary }) {
         </CardContent>
       </Card>
 
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Users className="h-4 w-4 text-primary" /> Participants
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {data.participants.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{NA}</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {data.participants.map((p, i) => (
+                  <li key={i} className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{p.name}</span>
+                    <span className="text-muted-foreground">{p.role || "—"}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Target className="h-4 w-4 text-primary" /> Meeting objective
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-foreground/90">{data.objective || NA}</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="shadow-soft">
         <CardHeader>
           <CardTitle className="text-base">Key discussion points</CardTitle>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm">
-            {data.keyPoints.map((p) => (
-              <li key={p} className="flex gap-2">
-                <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
-                <span>{p}</span>
-              </li>
-            ))}
-          </ul>
+          {data.keyPoints.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{NA}</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {data.keyPoints.map((p, i) => (
+                <li key={i} className="flex gap-2">
+                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
 
@@ -249,26 +322,30 @@ function SummaryView({ data }: { data: MeetingSummary }) {
           <CardTitle className="text-base">Action items</CardTitle>
         </CardHeader>
         <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Task</TableHead>
-                <TableHead>Owner</TableHead>
-                <TableHead>Priority</TableHead>
-                <TableHead>Deadline</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.actionItems.map((a, i) => (
-                <TableRow key={i}>
-                  <TableCell className="font-medium">{a.task}</TableCell>
-                  <TableCell>{a.owner}</TableCell>
-                  <TableCell>{priorityBadge(a.priority)}</TableCell>
-                  <TableCell className="text-muted-foreground">{a.deadline}</TableCell>
+          {data.actionItems.length === 0 ? (
+            <p className="px-6 pb-6 text-sm text-muted-foreground">{NA}</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Task</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Priority</TableHead>
+                  <TableHead>Deadline</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.actionItems.map((a, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="font-medium">{a.task}</TableCell>
+                    <TableCell>{a.owner}</TableCell>
+                    <TableCell>{priorityBadge(a.priority)}</TableCell>
+                    <TableCell className="text-muted-foreground">{a.deadline}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 
@@ -278,32 +355,53 @@ function SummaryView({ data }: { data: MeetingSummary }) {
             <CardTitle className="text-base">Decisions made</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2 text-sm">
-              {data.decisions.map((d) => (
-                <li key={d} className="flex gap-2">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                  <span>{d}</span>
-                </li>
-              ))}
-            </ul>
+            {data.decisions.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{NA}</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {data.decisions.map((d, i) => (
+                  <li key={i} className="flex gap-2">
+                    <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-soft border-warning/30">
           <CardHeader>
-            <CardTitle className="text-base">Risks &amp; follow-ups</CardTitle>
+            <CardTitle className="text-base">Risks &amp; concerns</CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2 text-sm">
-              {data.risks.map((d) => (
-                <li key={d} className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
-                  <span>{d}</span>
-                </li>
-              ))}
-            </ul>
+            {data.risks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{NA}</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {data.risks.map((d, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                    <span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      <Card className="shadow-soft">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Calendar className="h-4 w-4 text-primary" /> Next meeting
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-foreground/90">
+            {isMissing(data.nextMeeting) ? NA : data.nextMeeting}
+          </p>
+        </CardContent>
+      </Card>
     </div>
   );
 }
