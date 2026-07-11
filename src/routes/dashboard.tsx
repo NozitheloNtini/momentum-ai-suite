@@ -175,16 +175,21 @@ function Dashboard() {
 
           <div className="flex flex-col gap-4">
             <Card className="shadow-soft">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <TrendingUp className="h-4 w-4 text-primary" /> AI usage
-                </CardTitle>
-                <CardDescription>Monthly credit summary</CardDescription>
+              <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="h-4 w-4 text-primary" /> AI usage
+                  </CardTitle>
+                  <CardDescription>Monthly credit summary</CardDescription>
+                </div>
+                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Sample data
+                </span>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Stat label="Summaries" value={18} max={30} />
-                <Stat label="Plans generated" value={11} max={20} />
-                <Stat label="Chat messages" value={142} max={500} />
+                <Stat label="Summaries" value={0} max={30} />
+                <Stat label="Plans generated" value={0} max={20} />
+                <Stat label="Chat messages" value={0} max={500} />
               </CardContent>
             </Card>
             <Card className="shadow-soft">
