@@ -1,7 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, X, Loader2, Sparkles, Clock, AlertTriangle, ListChecks } from "lucide-react";
+import {
+  Plus,
+  X,
+  Loader2,
+  Sparkles,
+  Clock,
+  AlertTriangle,
+  ListChecks,
+} from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
 import {
@@ -21,7 +29,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { mockPlanTasks, type PlannerInput, type PlannerResult, type Quadrant } from "@/lib/mock-ai";
+import {
+  planTasks,
+  type PlannerInput,
+  type PlannerResult,
+  type Quadrant,
+} from "@/lib/ai.functions";
 import { SaveButton } from "@/components/save-button";
 
 export const Route = createFileRoute("/task-planner")({
@@ -40,40 +53,62 @@ export const Route = createFileRoute("/task-planner")({
 
 type Draft = PlannerInput & { id: string };
 
-const seed: Draft[] = [
-  { id: "1", title: "Finalize onboarding wireframes", deadline: "Today", priority: "High", duration: 90 },
-  { id: "2", title: "Reply to launch messaging thread", deadline: "Today", priority: "Medium", duration: 20 },
-  { id: "3", title: "Deep work: quarterly roadmap doc", deadline: "Fri", priority: "High", duration: 120 },
-  { id: "4", title: "Cleanup old Notion pages", deadline: "Next week", priority: "Low", duration: 30 },
+const TITLE_PLACEHOLDERS = [
+  "Finish quarterly report",
+  "Respond to client email",
+  "Prepare presentation",
+  "Schedule stakeholder meeting",
 ];
 
+const emptyRow = (i = 0): Draft => ({
+  id: crypto.randomUUID(),
+  title: "",
+  deadline: "",
+  priority: "Medium",
+  duration: 30,
+  // stash index for placeholder rotation via a symbol-free approach
+  ...({ __idx: i } as object),
+});
+
 function TaskPlanner() {
-  const [tasks, setTasks] = useState<Draft[]>(seed);
+  const [tasks, setTasks] = useState<Draft[]>([emptyRow(0)]);
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const update = (id: string, patch: Partial<Draft>) =>
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
 
-  const add = () =>
-    setTasks((ts) => [
-      ...ts,
-      { id: crypto.randomUUID(), title: "", deadline: "Today", priority: "Medium", duration: 30 },
-    ]);
-  const remove = (id: string) => setTasks((ts) => ts.filter((t) => t.id !== id));
+  const add = () => setTasks((ts) => [...ts, emptyRow(ts.length)]);
+  const remove = (id: string) =>
+    setTasks((ts) => (ts.length > 1 ? ts.filter((t) => t.id !== id) : ts));
 
   const generate = async () => {
-    const valid = tasks.filter((t) => t.title.trim());
+    const valid = tasks
+      .filter((t) => t.title.trim())
+      .map(({ title, deadline, priority, duration }) => ({
+        title: title.trim(),
+        deadline: deadline.trim() || "No deadline",
+        priority,
+        duration: Number(duration) || 30,
+      }));
     if (!valid.length) {
       toast.error("Add at least one task");
       return;
     }
     setLoading(true);
     setResult(null);
+    setError(null);
     try {
-      const r = await mockPlanTasks(valid);
+      const r = await planTasks({ data: { tasks: valid } });
       setResult(r);
       toast.success("Plan ready");
+    } catch (e) {
+      const msg =
+        e instanceof Error
+          ? e.message
+          : "AI service unavailable. Connect an OpenAI-compatible model to enable AI-generated responses.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -89,11 +124,11 @@ function TaskPlanner() {
               <ListChecks className="h-4 w-4 text-primary" /> Your tasks
             </CardTitle>
             <CardDescription>
-              List what's on your plate. AI will sort by urgency & importance and build a schedule.
+              List what's on your plate. AI will sort by urgency &amp; importance and build a schedule.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {tasks.map((t) => (
+            {tasks.map((t, i) => (
               <div
                 key={t.id}
                 className="grid gap-2 rounded-xl border border-border bg-card p-3 md:grid-cols-[1fr_140px_140px_120px_auto] md:items-center"
@@ -101,16 +136,18 @@ function TaskPlanner() {
                 <Input
                   value={t.title}
                   onChange={(e) => update(t.id, { title: e.target.value })}
-                  placeholder="Task title…"
+                  placeholder={TITLE_PLACEHOLDERS[i % TITLE_PLACEHOLDERS.length]}
                 />
                 <Input
                   value={t.deadline}
                   onChange={(e) => update(t.id, { deadline: e.target.value })}
-                  placeholder="Deadline"
+                  placeholder="e.g. Today, Fri"
                 />
                 <Select
                   value={t.priority}
-                  onValueChange={(v) => update(t.id, { priority: v as PlannerInput["priority"] })}
+                  onValueChange={(v) =>
+                    update(t.id, { priority: v as PlannerInput["priority"] })
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -126,13 +163,17 @@ function TaskPlanner() {
                   min={5}
                   step={5}
                   value={t.duration}
-                  onChange={(e) => update(t.id, { duration: Number(e.target.value) || 30 })}
+                  onChange={(e) =>
+                    update(t.id, { duration: Number(e.target.value) || 30 })
+                  }
+                  placeholder="Minutes"
                 />
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => remove(t.id)}
                   aria-label="Remove task"
+                  disabled={tasks.length === 1}
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -166,6 +207,16 @@ function TaskPlanner() {
               ))}
             </CardContent>
           </Card>
+        ) : error ? (
+          <Card className="border-destructive/30 bg-destructive/5 shadow-none">
+            <CardContent className="flex items-start gap-3 p-6 text-sm">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+              <div>
+                <div className="font-medium text-destructive">Could not generate plan</div>
+                <div className="mt-1 text-muted-foreground">{error}</div>
+              </div>
+            </CardContent>
+          </Card>
         ) : result ? (
           <>
             <div className="flex justify-end">
@@ -178,7 +229,18 @@ function TaskPlanner() {
             </div>
             <PlanView result={result} />
           </>
-        ) : null}
+        ) : (
+          <Card className="flex flex-col items-center justify-center border-dashed py-12 text-center shadow-none">
+            <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
+              <ListChecks className="h-6 w-6" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold">No plan yet</h3>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              Add your tasks above and click Generate plan. AI will prioritize using the
+              Eisenhower Matrix and build a focused schedule.
+            </p>
+          </Card>
+        )}
       </div>
     </>
   );
@@ -269,19 +331,23 @@ function PlanView({ result }: { result: PlannerResult }) {
             <CardDescription>Time-blocked plan starting 9:00 AM</CardDescription>
           </CardHeader>
           <CardContent>
-            <ol className="relative border-l border-border pl-4">
-              {result.schedule.map((s, i) => (
-                <li key={i} className="mb-4 ml-2">
-                  <span className="absolute -left-1.5 grid h-3 w-3 place-items-center rounded-full bg-primary ring-4 ring-background" />
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" /> {s.time} · {s.duration} min
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-2 text-sm font-medium">
-                    {s.task} {priorityBadge(s.priority)}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            {result.schedule.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Nothing scheduled.</p>
+            ) : (
+              <ol className="relative border-l border-border pl-4">
+                {result.schedule.map((s, i) => (
+                  <li key={i} className="mb-4 ml-2">
+                    <span className="absolute -left-1.5 grid h-3 w-3 place-items-center rounded-full bg-primary ring-4 ring-background" />
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" /> {s.time} · {s.duration} min
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-2 text-sm font-medium">
+                      {s.task} {priorityBadge(s.priority)}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
           </CardContent>
         </Card>
         <Card className="shadow-soft border-warning/30">
@@ -291,18 +357,24 @@ function PlanView({ result }: { result: PlannerResult }) {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2 text-sm">
-              {result.risks.map((r) => (
-                <li key={r} className="flex gap-2">
-                  <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-4 rounded-lg bg-primary/5 p-3 text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">Focus order:</span>{" "}
-              {result.focusOrder.join(" → ")}
-            </div>
+            {result.risks.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No high-risk deadlines detected.</p>
+            ) : (
+              <ul className="space-y-2 text-sm">
+                {result.risks.map((r, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-warning" />
+                    <span>{r}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {result.focusOrder.length > 0 && (
+              <div className="mt-4 rounded-lg bg-primary/5 p-3 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Focus order:</span>{" "}
+                {result.focusOrder.join(" → ")}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
