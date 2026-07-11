@@ -51,11 +51,10 @@ const tools = [
   },
 ];
 
-const activity = [
-  { icon: FileText, text: "Summarized Q3 Planning Sync", time: "12 min ago" },
-  { icon: ListChecks, text: "Planned 6 tasks for Thursday", time: "1 hr ago" },
-  { icon: MessageSquare, text: "Drafted a professional reply", time: "Yesterday" },
-  { icon: FileText, text: "Summarized Design Review", time: "Yesterday" },
+const sampleActivity = [
+  { icon: FileText, text: "Meeting summary example", time: "Sample" },
+  { icon: ListChecks, text: "Task plan example", time: "Sample" },
+  { icon: MessageSquare, text: "Assistant reply example", time: "Sample" },
 ];
 
 const tips = [
