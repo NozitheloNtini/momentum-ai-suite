@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { useBlocker } from "@tanstack/react-router";
 
 /**
- * Warn on tab close and block in-app navigation when there are unsaved changes.
+ * Warn on tab close and confirm in-app navigation when there are unsaved changes.
  */
 export function useUnsavedChanges(dirty: boolean) {
   useEffect(() => {
@@ -16,12 +16,9 @@ export function useUnsavedChanges(dirty: boolean) {
   }, [dirty]);
 
   useBlocker({
-    shouldBlockFn: () => {
-      if (!dirty) return false;
-      return !window.confirm(
-        "You have unsaved changes. Leave this page and lose them?",
-      );
-    },
+    disabled: !dirty,
+    shouldBlockFn: () =>
+      !window.confirm("You have unsaved changes. Leave this page and lose them?"),
     enableBeforeUnload: false,
   });
 }
