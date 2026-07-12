@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { z } from "zod";
 import { toast } from "sonner";
 import {
   Plus,
@@ -9,6 +10,8 @@ import {
   Clock,
   AlertTriangle,
   ListChecks,
+  Save,
+  Check,
 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
@@ -22,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -35,9 +39,22 @@ import {
   type PlannerResult,
   type Quadrant,
 } from "@/lib/ai.functions";
-import { SaveButton } from "@/components/save-button";
+import { useAuth } from "@/lib/auth-context";
+import {
+  upsertItem,
+  fetchItem,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+} from "@/lib/persistence";
+import { GuestSaveDialog } from "@/components/guest-save-dialog";
+import { DatePicker, formatDeadline } from "@/components/date-picker";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
+const searchSchema = z.object({ id: z.string().optional() });
 
 export const Route = createFileRoute("/task-planner")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "AI Task Planner — Momentum AI" },
@@ -51,42 +68,139 @@ export const Route = createFileRoute("/task-planner")({
   component: TaskPlanner,
 });
 
-type Draft = PlannerInput & { id: string };
-
-const TITLE_PLACEHOLDERS = [
-  "Finish quarterly report",
-  "Respond to client email",
-  "Prepare presentation",
-  "Schedule stakeholder meeting",
-];
+type ExtInput = PlannerInput & {
+  description?: string;
+  owner?: string;
+  category?: string;
+};
+type Draft = { id: string } & ExtInput;
+type Persisted = { tasks: ExtInput[]; result: PlannerResult | null };
 
 const emptyRow = (): Draft => ({
   id: crypto.randomUUID(),
   title: "",
+  description: "",
   deadline: "",
   priority: "Medium",
   duration: 30,
+  owner: "",
+  category: "",
 });
 
 function TaskPlanner() {
+  const { id } = Route.useSearch();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [tasks, setTasks] = useState<Draft[]>([emptyRow()]);
   const [result, setResult] = useState<PlannerResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | undefined>(id);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [guestOpen, setGuestOpen] = useState(false);
+  useUnsavedChanges(dirty);
 
-  const update = (id: string, patch: Partial<Draft>) =>
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (id && isAuthenticated) {
+        try {
+          const item = await fetchItem(id);
+          if (!item || cancelled) return;
+          const d = item.data as Persisted;
+          setTasks(
+            (d?.tasks?.length ? d.tasks : [emptyRow()]).map((t) => ({
+              ...emptyRow(),
+              ...t,
+              id: crypto.randomUUID(),
+            })),
+          );
+          setResult(d?.result ?? null);
+          setSavingId(item.id);
+          setSavedAt(item.updated_at);
+          setDirty(false);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Failed to load");
+        }
+        return;
+      }
+      if (!id) {
+        const d = loadDraft<Persisted>("task_plan");
+        if (d && !cancelled) {
+          setTasks(
+            (d.tasks?.length ? d.tasks : [emptyRow()]).map((t) => ({
+              ...emptyRow(),
+              ...t,
+              id: crypto.randomUUID(),
+            })),
+          );
+          setResult(d.result || null);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isAuthenticated]);
+
+  useEffect(() => {
+    if (!savingId) {
+      const persisted: Persisted = {
+        tasks: tasks.map(({ id: _id, ...t }) => t),
+        result,
+      };
+      saveDraft("task_plan", persisted);
+    }
+  }, [tasks, result, savingId]);
+
+  const markDirty = () => setDirty(true);
+
+  const update = (id: string, patch: Partial<Draft>) => {
     setTasks((ts) => ts.map((t) => (t.id === id ? { ...t, ...patch } : t)));
+    markDirty();
+  };
 
-  const add = () => setTasks((ts) => [...ts, emptyRow()]);
-  const remove = (id: string) =>
+  const add = () => {
+    setTasks((ts) => [...ts, emptyRow()]);
+    markDirty();
+  };
+  const remove = (id: string) => {
     setTasks((ts) => (ts.length > 1 ? ts.filter((t) => t.id !== id) : ts));
+    markDirty();
+  };
+
+  const persist = async (nextResult: PlannerResult | null) => {
+    if (!user) return;
+    const persisted: Persisted = {
+      tasks: tasks.map(({ id: _id, ...t }) => t),
+      result: nextResult,
+    };
+    try {
+      const first = tasks.find((t) => t.title.trim())?.title || "Task plan";
+      const item = await upsertItem({
+        id: savingId,
+        user_id: user.id,
+        kind: "task_plan",
+        title: `Plan · ${first}`,
+        data: persisted,
+      });
+      setSavingId(item.id);
+      setSavedAt(item.updated_at);
+      setDirty(false);
+      clearDraft("task_plan");
+      if (!id) navigate({ to: "/task-planner", search: { id: item.id }, replace: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Save failed");
+    }
+  };
 
   const generate = async () => {
-    const valid = tasks
+    const valid: PlannerInput[] = tasks
       .filter((t) => t.title.trim())
       .map(({ title, deadline, priority, duration }) => ({
         title: title.trim(),
-        deadline: deadline.trim() || "No deadline",
+        deadline: deadline ? formatDeadline(deadline) : "No deadline",
         priority,
         duration: Number(duration) || 30,
       }));
@@ -101,6 +215,11 @@ function TaskPlanner() {
       const r = await planTasks({ data: { tasks: valid } });
       setResult(r);
       toast.success("Plan ready");
+      if (isAuthenticated) {
+        await persist(r);
+      } else {
+        setDirty(true);
+      }
     } catch (e) {
       const msg =
         e instanceof Error
@@ -112,69 +231,138 @@ function TaskPlanner() {
     }
   };
 
+  const onSave = async () => {
+    if (!isAuthenticated) {
+      setGuestOpen(true);
+      return;
+    }
+    await persist(result);
+    toast.success("Saved to your library");
+  };
+
   return (
     <>
-      <TopBar title="AI Task Planner" subtitle="Prioritize with the Eisenhower Matrix" />
+      <TopBar
+        title="AI Task Planner"
+        subtitle={
+          savedAt
+            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
+            : dirty
+              ? "Unsaved changes"
+              : "Prioritize with the Eisenhower Matrix"
+        }
+      />
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-8">
         <Card className="shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ListChecks className="h-4 w-4 text-primary" /> Your tasks
-            </CardTitle>
-            <CardDescription>
-              List what's on your plate. AI will sort by urgency &amp; importance and build a schedule.
-            </CardDescription>
+          <CardHeader className="flex flex-row items-start justify-between gap-2 space-y-0">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ListChecks className="h-4 w-4 text-primary" /> Your tasks
+              </CardTitle>
+              <CardDescription>
+                List what's on your plate. AI will sort by urgency &amp; importance and build a schedule.
+              </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={onSave} disabled={!dirty && !!savingId}>
+              {savingId && !dirty ? (
+                <>
+                  <Check className="mr-1.5 h-4 w-4" /> Saved
+                </>
+              ) : (
+                <>
+                  <Save className="mr-1.5 h-4 w-4" /> Save
+                </>
+              )}
+            </Button>
           </CardHeader>
           <CardContent className="space-y-3">
-            {tasks.map((t, i) => (
+            {tasks.map((t) => (
               <div
                 key={t.id}
-                className="grid gap-2 rounded-xl border border-border bg-card p-3 md:grid-cols-[1fr_140px_140px_120px_auto] md:items-center"
+                className="grid gap-2 rounded-xl border border-border bg-card p-3 md:grid-cols-2"
               >
-                <Input
-                  value={t.title}
-                  onChange={(e) => update(t.id, { title: e.target.value })}
-                  placeholder={TITLE_PLACEHOLDERS[i % TITLE_PLACEHOLDERS.length]}
-                />
-                <Input
-                  value={t.deadline}
-                  onChange={(e) => update(t.id, { deadline: e.target.value })}
-                  placeholder="e.g. Today, Fri"
-                />
-                <Select
-                  value={t.priority}
-                  onValueChange={(v) =>
-                    update(t.id, { priority: v as PlannerInput["priority"] })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="High">High</SelectItem>
-                    <SelectItem value="Medium">Medium</SelectItem>
-                    <SelectItem value="Low">Low</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Input
-                  type="number"
-                  min={5}
-                  step={5}
-                  value={t.duration}
-                  onChange={(e) =>
-                    update(t.id, { duration: Number(e.target.value) || 30 })
-                  }
-                  placeholder="Minutes"
-                />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => remove(t.id)}
-                  aria-label="Remove task"
-                  disabled={tasks.length === 1}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Task name</Label>
+                  <Input
+                    value={t.title}
+                    onChange={(e) => update(t.id, { title: e.target.value })}
+                    placeholder="e.g. Finish quarterly report"
+                  />
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Description (optional)</Label>
+                  <Textarea
+                    value={t.description ?? ""}
+                    onChange={(e) => update(t.id, { description: e.target.value })}
+                    placeholder="What does 'done' look like?"
+                    className="min-h-16"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Priority</Label>
+                  <Select
+                    value={t.priority}
+                    onValueChange={(v) =>
+                      update(t.id, { priority: v as PlannerInput["priority"] })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="High">High</SelectItem>
+                      <SelectItem value="Medium">Medium</SelectItem>
+                      <SelectItem value="Low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Estimated duration (min)</Label>
+                  <Input
+                    type="number"
+                    min={5}
+                    step={5}
+                    value={t.duration}
+                    onChange={(e) =>
+                      update(t.id, { duration: Number(e.target.value) || 30 })
+                    }
+                    placeholder="Minutes"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Due date</Label>
+                  <DatePicker
+                    value={t.deadline}
+                    onChange={(iso) => update(t.id, { deadline: iso })}
+                    placeholder="Pick a date"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Owner (optional)</Label>
+                  <Input
+                    value={t.owner ?? ""}
+                    onChange={(e) => update(t.id, { owner: e.target.value })}
+                    placeholder="Name or team"
+                  />
+                </div>
+                <div className="space-y-1.5 md:col-span-2">
+                  <Label>Category (optional)</Label>
+                  <Input
+                    value={t.category ?? ""}
+                    onChange={(e) => update(t.id, { category: e.target.value })}
+                    placeholder="e.g. Marketing, Product"
+                  />
+                </div>
+                <div className="md:col-span-2 flex justify-end">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => remove(t.id)}
+                    disabled={tasks.length === 1}
+                  >
+                    <X className="mr-1.5 h-4 w-4" /> Remove
+                  </Button>
+                </div>
               </div>
             ))}
             <div className="flex flex-wrap justify-between gap-2 pt-1">
@@ -216,17 +404,7 @@ function TaskPlanner() {
             </CardContent>
           </Card>
         ) : result ? (
-          <>
-            <div className="flex justify-end">
-              <SaveButton
-                kind="task_plan"
-                title={`Plan · ${new Date().toLocaleDateString()}`}
-                data={result}
-                featureLabel="this plan"
-              />
-            </div>
-            <PlanView result={result} />
-          </>
+          <PlanView result={result} />
         ) : (
           <Card className="flex flex-col items-center justify-center border-dashed py-12 text-center shadow-none">
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -240,8 +418,17 @@ function TaskPlanner() {
           </Card>
         )}
       </div>
+      <GuestSaveDialog
+        open={guestOpen}
+        onOpenChange={setGuestOpen}
+        feature="this plan"
+      />
     </>
   );
+}
+
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="text-xs font-medium text-muted-foreground">{children}</label>;
 }
 
 const QUADRANT_META: Record<Quadrant, { title: string; sub: string; tone: string }> = {

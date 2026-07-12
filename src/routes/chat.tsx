@@ -1,15 +1,28 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import { z } from "zod";
 import { toast } from "sonner";
-import { Send, Sparkles, Trash2, User, AlertTriangle } from "lucide-react";
+import { Send, Sparkles, Trash2, User, AlertTriangle, Save, Check } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { chatReply } from "@/lib/ai.functions";
-import { SaveButton } from "@/components/save-button";
+import { useAuth } from "@/lib/auth-context";
+import {
+  upsertItem,
+  fetchItem,
+  saveDraft,
+  loadDraft,
+  clearDraft,
+} from "@/lib/persistence";
+import { GuestSaveDialog } from "@/components/guest-save-dialog";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+
+const searchSchema = z.object({ id: z.string().optional() });
 
 export const Route = createFileRoute("/chat")({
+  validateSearch: searchSchema,
   head: () => ({
     meta: [
       { title: "AI Workplace Assistant — Momentum AI" },
@@ -40,15 +53,80 @@ const GREETING: Msg = {
 };
 
 function Chat() {
+  const { id } = Route.useSearch();
+  const navigate = useNavigate();
+  const { user, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState<Msg[]>([GREETING]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [savingId, setSavingId] = useState<string | undefined>(id);
+  const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [dirty, setDirty] = useState(false);
+  const [guestOpen, setGuestOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  useUnsavedChanges(dirty);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (id && isAuthenticated) {
+        try {
+          const item = await fetchItem(id);
+          if (!item || cancelled) return;
+          const d = item.data as { messages: Msg[] };
+          setMessages(d?.messages?.length ? d.messages : [GREETING]);
+          setSavingId(item.id);
+          setSavedAt(item.updated_at);
+          setDirty(false);
+        } catch (e) {
+          toast.error(e instanceof Error ? e.message : "Failed to load");
+        }
+        return;
+      }
+      if (!id) {
+        const d = loadDraft<{ messages: Msg[] }>("chat");
+        if (d?.messages?.length && !cancelled) setMessages(d.messages);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isAuthenticated]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
+
+  useEffect(() => {
+    if (!savingId) saveDraft("chat", { messages });
+  }, [messages, savingId]);
+
+  const titleFromMessages = (msgs: Msg[]) => {
+    const firstUser = msgs.find((m) => m.role === "user");
+    if (!firstUser) return "New chat";
+    return firstUser.text.slice(0, 60);
+  };
+
+  const persist = async (msgs: Msg[]) => {
+    if (!user) return;
+    try {
+      const item = await upsertItem({
+        id: savingId,
+        user_id: user.id,
+        kind: "chat",
+        title: titleFromMessages(msgs),
+        data: { messages: msgs },
+      });
+      setSavingId(item.id);
+      setSavedAt(item.updated_at);
+      setDirty(false);
+      clearDraft("chat");
+      if (!id) navigate({ to: "/chat", search: { id: item.id }, replace: true });
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -59,15 +137,18 @@ function Chat() {
     setInput("");
     setTyping(true);
     setError(null);
+    setDirty(true);
     try {
       const history = nextMessages
         .filter((m) => m.id !== "welcome")
         .map((m) => ({ role: m.role, content: m.text }));
       const { reply } = await chatReply({ data: { history } });
-      setMessages((m) => [
-        ...m,
-        { id: crypto.randomUUID(), role: "assistant", text: reply },
-      ]);
+      const finalMessages = [
+        ...nextMessages,
+        { id: crypto.randomUUID(), role: "assistant" as const, text: reply },
+      ];
+      setMessages(finalMessages);
+      if (isAuthenticated) await persist(finalMessages);
     } catch (e) {
       const msg =
         e instanceof Error
@@ -81,25 +162,55 @@ function Chat() {
   };
 
   const clear = () => {
+    if (dirty && !window.confirm("Discard this conversation?")) return;
     setMessages([GREETING]);
     setError(null);
+    setDirty(false);
+    setSavingId(undefined);
+    clearDraft("chat");
+    navigate({ to: "/chat", search: {}, replace: true });
+  };
+
+  const onSave = async () => {
+    if (!isAuthenticated) {
+      setGuestOpen(true);
+      return;
+    }
+    await persist(messages);
+    toast.success("Saved to your library");
   };
 
   return (
     <>
-      <TopBar title="AI Workplace Assistant" subtitle="Draft, summarize, and refine — instantly" />
+      <TopBar
+        title="AI Workplace Assistant"
+        subtitle={
+          savedAt
+            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
+            : "Draft, summarize, and refine — instantly"
+        }
+      />
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col p-4 md:p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
           <Disclaimer className="flex-1" />
-          <SaveButton
-            kind="chat"
-            title={`Chat · ${new Date().toLocaleDateString()}`}
-            data={messages}
-            featureLabel="this conversation"
-            disabled={messages.length <= 1}
-          />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onSave}
+            disabled={messages.length <= 1 || (!!savingId && !dirty)}
+          >
+            {savingId && !dirty ? (
+              <>
+                <Check className="mr-1.5 h-4 w-4" /> Saved
+              </>
+            ) : (
+              <>
+                <Save className="mr-1.5 h-4 w-4" /> Save
+              </>
+            )}
+          </Button>
           <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
-            <Trash2 className="mr-1.5 h-4 w-4" /> Clear
+            <Trash2 className="mr-1.5 h-4 w-4" /> New
           </Button>
         </div>
 
@@ -161,6 +272,11 @@ function Chat() {
           </Button>
         </form>
       </div>
+      <GuestSaveDialog
+        open={guestOpen}
+        onOpenChange={setGuestOpen}
+        feature="this conversation"
+      />
     </>
   );
 }

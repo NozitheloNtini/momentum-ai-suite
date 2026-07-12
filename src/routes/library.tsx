@@ -1,13 +1,47 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { BookMarked, FileText, ListChecks, MessageSquare, Trash2, Loader2 } from "lucide-react";
+import {
+  BookMarked,
+  FileText,
+  ListChecks,
+  MessageSquare,
+  Trash2,
+  Loader2,
+  Search,
+  Copy,
+  Pencil,
+  ExternalLink,
+} from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { supabase } from "@/integrations/supabase/client";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAuth } from "@/lib/auth-context";
+import {
+  listItems,
+  deleteItem,
+  renameItem,
+  duplicateItem,
+  formatDate,
+  formatRelative,
+  type SavedItem,
+  type Kind,
+} from "@/lib/persistence";
 
 export const Route = createFileRoute("/library")({
   head: () => ({
@@ -19,48 +53,80 @@ export const Route = createFileRoute("/library")({
   component: LibraryPage,
 });
 
-type Item = {
-  id: string;
-  kind: "meeting_note" | "task_plan" | "chat";
-  title: string;
-  created_at: string;
-};
-
 const KIND_META = {
-  meeting_note: { icon: FileText, label: "Meeting note" },
-  task_plan: { icon: ListChecks, label: "Task plan" },
-  chat: { icon: MessageSquare, label: "Chat" },
+  meeting_note: { icon: FileText, label: "Meeting note", path: "/meeting-notes" as const },
+  task_plan: { icon: ListChecks, label: "Task plan", path: "/task-planner" as const },
+  chat: { icon: MessageSquare, label: "Chat", path: "/chat" as const },
 } as const;
 
 function LibraryPage() {
   const { isAuthenticated, mode } = useAuth();
-  const [items, setItems] = useState<Item[] | null>(null);
-  const [tab, setTab] = useState<"all" | Item["kind"]>("all");
+  const navigate = useNavigate();
+  const [items, setItems] = useState<SavedItem[] | null>(null);
+  const [tab, setTab] = useState<"all" | Kind>("all");
+  const [q, setQ] = useState("");
+  const [renaming, setRenaming] = useState<SavedItem | null>(null);
+  const [newTitle, setNewTitle] = useState("");
 
   const load = async () => {
-    const { data, error } = await supabase
-      .from("saved_items")
-      .select("id, kind, title, created_at")
-      .order("created_at", { ascending: false });
-    if (error) {
-      toast.error(error.message);
-      return;
+    try {
+      setItems(await listItems());
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to load");
     }
-    setItems((data ?? []) as Item[]);
   };
 
   useEffect(() => {
     if (isAuthenticated) load();
   }, [isAuthenticated]);
 
-  const remove = async (id: string) => {
-    const { error } = await supabase.from("saved_items").delete().eq("id", id);
-    if (error) {
-      toast.error(error.message);
-      return;
+  const filtered = useMemo(() => {
+    const list = items ?? [];
+    const needle = q.trim().toLowerCase();
+    return list
+      .filter((i) => tab === "all" || i.kind === tab)
+      .filter((i) => (needle ? i.title.toLowerCase().includes(needle) : true));
+  }, [items, tab, q]);
+
+  const onDelete = async (item: SavedItem) => {
+    if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
+    try {
+      await deleteItem(item.id);
+      setItems((prev) => prev?.filter((i) => i.id !== item.id) ?? prev);
+      toast.success("Deleted");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
     }
-    setItems((prev) => (prev ? prev.filter((i) => i.id !== id) : prev));
-    toast.success("Removed");
+  };
+
+  const onDuplicate = async (item: SavedItem) => {
+    try {
+      const copy = await duplicateItem(item.id);
+      setItems((prev) => (prev ? [copy, ...prev] : prev));
+      toast.success("Duplicated");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Duplicate failed");
+    }
+  };
+
+  const submitRename = async () => {
+    if (!renaming) return;
+    try {
+      await renameItem(renaming.id, newTitle);
+      setItems((prev) =>
+        prev?.map((i) => (i.id === renaming.id ? { ...i, title: newTitle } : i)) ?? prev,
+      );
+      toast.success("Renamed");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Rename failed");
+    } finally {
+      setRenaming(null);
+    }
+  };
+
+  const open = (item: SavedItem) => {
+    const path = KIND_META[item.kind].path;
+    navigate({ to: path, search: { id: item.id } });
   };
 
   if (mode === "loading") {
@@ -100,12 +166,22 @@ function LibraryPage() {
     );
   }
 
-  const filtered = items?.filter((i) => tab === "all" || i.kind === tab) ?? [];
-
   return (
     <>
       <TopBar title="My Library" subtitle="Your saved work, synced across devices" />
-      <div className="mx-auto w-full max-w-4xl p-4 md:p-8">
+      <div className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-8">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by title…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
@@ -121,33 +197,74 @@ function LibraryPage() {
             ) : filtered.length === 0 ? (
               <Card className="border-dashed shadow-none">
                 <CardContent className="py-10 text-center text-sm text-muted-foreground">
-                  Nothing saved yet. Generate something in Meeting Notes, Task Planner, or the
-                  Assistant, then hit Save.
+                  {q
+                    ? "No items match your search."
+                    : "Nothing saved yet. Generate something in Meeting Notes, Task Planner, or the Assistant."}
                 </CardContent>
               </Card>
             ) : (
               <ul className="divide-y divide-border rounded-xl border border-border bg-card shadow-soft">
                 {filtered.map((it) => {
                   const meta = KIND_META[it.kind];
+                  const Icon = meta.icon;
                   return (
                     <li key={it.id} className="flex items-center gap-3 p-4">
-                      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                        <meta.icon className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{it.title}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {meta.label} · {new Date(it.created_at).toLocaleString()}
+                      <button
+                        onClick={() => open(it)}
+                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
+                        aria-label="Open"
+                      >
+                        <Icon className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => open(it)}
+                        className="min-w-0 flex-1 text-left"
+                      >
+                        <div className="truncate text-sm font-medium hover:underline">
+                          {it.title}
                         </div>
-                      </div>
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                          <span>{meta.label}</span>
+                          <span>·</span>
+                          <span>Created {formatDate(it.created_at)}</span>
+                          <span>·</span>
+                          <span>Edited {formatRelative(it.updated_at)}</span>
+                        </div>
+                      </button>
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => remove(it.id)}
-                        aria-label="Delete"
+                        onClick={() => open(it)}
+                        aria-label="Open"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <ExternalLink className="h-4 w-4" />
                       </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" aria-label="More">
+                            <span className="text-lg leading-none">⋯</span>
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setRenaming(it);
+                              setNewTitle(it.title);
+                            }}
+                          >
+                            <Pencil className="mr-2 h-4 w-4" /> Rename
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onDuplicate(it)}>
+                            <Copy className="mr-2 h-4 w-4" /> Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => onDelete(it)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </li>
                   );
                 })}
@@ -156,6 +273,31 @@ function LibraryPage() {
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={!!renaming} onOpenChange={(o) => !o && setRenaming(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="New title"
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submitRename();
+            }}
+          />
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setRenaming(null)}>
+              Cancel
+            </Button>
+            <Button onClick={submitRename} disabled={!newTitle.trim()}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
