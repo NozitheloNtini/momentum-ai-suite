@@ -44,6 +44,9 @@ import {
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { ExportMenu } from "@/components/export-menu";
+import { meetingToMarkdown } from "@/lib/exports";
+import { consumeNotePrefill } from "@/lib/prefill";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -105,6 +108,14 @@ function MeetingNotes() {
         }
       }
       if (!id) {
+        const prefill = consumeNotePrefill();
+        if (prefill && !cancelled) {
+          setTitle(prefill.title || "");
+          setNotes(prefill.notes);
+          setDirty(true);
+          toast.success("Loaded content from chat");
+          return;
+        }
         const d = loadDraft<Draft>("meeting_note");
         if (d && !cancelled) {
           setTitle(d.title || "");
@@ -466,6 +477,7 @@ function SummaryView({
             <CardTitle className="truncate text-lg">{data.title}</CardTitle>
           </div>
           <div className="flex items-center gap-1">
+            <ExportMenu markdown={meetingToMarkdown(data)} filenameBase={data.title || "meeting-summary"} />
             <Button size="sm" variant="outline" onClick={onSave} disabled={isSaved}>
               {isSaved ? (
                 <>
@@ -477,7 +489,7 @@ function SummaryView({
                 </>
               )}
             </Button>
-            <Button size="sm" variant="ghost" onClick={copy}>
+            <Button size="sm" variant="ghost" onClick={copy} title="Copy short summary">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>

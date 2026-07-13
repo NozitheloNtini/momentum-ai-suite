@@ -2,7 +2,18 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Send, Sparkles, Trash2, User, AlertTriangle, Save, Check } from "lucide-react";
+import {
+  Send,
+  Sparkles,
+  Trash2,
+  User,
+  AlertTriangle,
+  Save,
+  Check,
+  Copy,
+  FileText,
+  ListChecks,
+} from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +29,9 @@ import {
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { ExportMenu } from "@/components/export-menu";
+import { chatToMarkdown, copyText } from "@/lib/exports";
+import { setNotePrefill, setTaskPrefill } from "@/lib/prefill";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -193,25 +207,33 @@ function Chat() {
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col p-4 md:p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
           <Disclaimer className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSave}
-            disabled={messages.length <= 1 || (!!savingId && !dirty)}
-          >
-            {savingId && !dirty ? (
-              <>
-                <Check className="mr-1.5 h-4 w-4" /> Saved
-              </>
-            ) : (
-              <>
-                <Save className="mr-1.5 h-4 w-4" /> Save
-              </>
-            )}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
-            <Trash2 className="mr-1.5 h-4 w-4" /> New
-          </Button>
+          <div className="flex items-center gap-1">
+            <ExportMenu
+              markdown={chatToMarkdown(
+                messages.filter((m) => m.id !== "welcome").map((m) => ({ role: m.role, text: m.text })),
+              )}
+              filenameBase="momentum-chat"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSave}
+              disabled={messages.length <= 1 || (!!savingId && !dirty)}
+            >
+              {savingId && !dirty ? (
+                <>
+                  <Check className="mr-1.5 h-4 w-4" /> Saved
+                </>
+              ) : (
+                <>
+                  <Save className="mr-1.5 h-4 w-4" /> Save
+                </>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
+              <Trash2 className="mr-1.5 h-4 w-4" /> New
+            </Button>
+          </div>
         </div>
 
         <div
@@ -221,7 +243,19 @@ function Chat() {
         >
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {messages.map((m) => (
-              <Bubble key={m.id} msg={m} />
+              <Bubble
+                key={m.id}
+                msg={m}
+                onSaveAsNote={() => {
+                  setNotePrefill({ notes: m.text });
+                  navigate({ to: "/meeting-notes", search: {} });
+                }}
+                onCreateTask={() => {
+                  const title = m.text.split("\n")[0].slice(0, 120);
+                  setTaskPrefill({ title, description: m.text });
+                  navigate({ to: "/task-planner", search: {} });
+                }}
+              />
             ))}
             {typing && <Typing />}
             {error && !typing && (
@@ -281,10 +315,19 @@ function Chat() {
   );
 }
 
-function Bubble({ msg }: { msg: Msg }) {
+function Bubble({
+  msg,
+  onSaveAsNote,
+  onCreateTask,
+}: {
+  msg: Msg;
+  onSaveAsNote: () => void;
+  onCreateTask: () => void;
+}) {
   const isUser = msg.role === "user";
+  const isWelcome = msg.id === "welcome";
   return (
-    <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div className={`group flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       <div
         className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
           isUser
@@ -294,14 +337,34 @@ function Bubble({ msg }: { msg: Msg }) {
       >
         {isUser ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
       </div>
-      <div
-        className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
-        }`}
-      >
-        {msg.text}
+      <div className={`flex max-w-[80%] flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}>
+        <div
+          className={`whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground"
+          }`}
+        >
+          {msg.text}
+        </div>
+        {!isUser && !isWelcome && (
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 no-print">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => copyText(msg.text, "Copied reply")}
+            >
+              <Copy className="mr-1 h-3 w-3" /> Copy
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onSaveAsNote}>
+              <FileText className="mr-1 h-3 w-3" /> Save as note
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onCreateTask}>
+              <ListChecks className="mr-1 h-3 w-3" /> Create task
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );

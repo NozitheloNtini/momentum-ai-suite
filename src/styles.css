@@ -129,3 +129,11 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 }
+
+@media print {
+  aside, [data-sidebar], nav, header, footer, .no-print { display: none !important; }
+  body { background: white !important; color: black !important; }
+  main, [role="main"] { padding: 0 !important; }
+  .shadow-soft, .shadow-glow, .shadow-lg, .shadow-md, .shadow-sm { box-shadow: none !important; }
+  a[href]::after { content: "" !important; }
+}

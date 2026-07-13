@@ -25,6 +25,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
@@ -50,6 +51,10 @@ import {
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
 import { DatePicker, formatDeadline } from "@/components/date-picker";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { ExportMenu } from "@/components/export-menu";
+import { plannerToMarkdown } from "@/lib/exports";
+import { consumeTaskPrefill } from "@/lib/prefill";
+import { Progress } from "@/components/ui/progress";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
@@ -74,7 +79,7 @@ type ExtInput = PlannerInput & {
   category?: string;
 };
 type Draft = { id: string } & ExtInput;
-type Persisted = { tasks: ExtInput[]; result: PlannerResult | null };
+type Persisted = { tasks: ExtInput[]; result: PlannerResult | null; completed?: string[] };
 
 const emptyRow = (): Draft => ({
   id: crypto.randomUUID(),
@@ -99,6 +104,7 @@ function TaskPlanner() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
   useUnsavedChanges(dirty);
 
   useEffect(() => {
@@ -117,6 +123,7 @@ function TaskPlanner() {
             })),
           );
           setResult(d?.result ?? null);
+          setCompleted(new Set(d?.completed ?? []));
           setSavingId(item.id);
           setSavedAt(item.updated_at);
           setDirty(false);
@@ -126,6 +133,13 @@ function TaskPlanner() {
         return;
       }
       if (!id) {
+        const prefill = consumeTaskPrefill();
+        if (prefill && !cancelled) {
+          setTasks([{ ...emptyRow(), title: prefill.title, description: prefill.description || "" }]);
+          setDirty(true);
+          toast.success("Loaded task from chat");
+          return;
+        }
         const d = loadDraft<Persisted>("task_plan");
         if (d && !cancelled) {
           setTasks(
@@ -136,6 +150,7 @@ function TaskPlanner() {
             })),
           );
           setResult(d.result || null);
+          setCompleted(new Set(d.completed ?? []));
         }
       }
     })();
@@ -149,10 +164,11 @@ function TaskPlanner() {
       const persisted: Persisted = {
         tasks: tasks.map(({ id: _id, ...t }) => t),
         result,
+        completed: Array.from(completed),
       };
       saveDraft("task_plan", persisted);
     }
-  }, [tasks, result, savingId]);
+  }, [tasks, result, savingId, completed]);
 
   const markDirty = () => setDirty(true);
 
@@ -175,6 +191,7 @@ function TaskPlanner() {
     const persisted: Persisted = {
       tasks: tasks.map(({ id: _id, ...t }) => t),
       result: nextResult,
+      completed: Array.from(completed),
     };
     try {
       const first = tasks.find((t) => t.title.trim())?.title || "Task plan";
@@ -336,6 +353,11 @@ function TaskPlanner() {
                     onChange={(iso) => update(t.id, { deadline: iso })}
                     placeholder="Pick a date"
                   />
+                  {isOverdue(t.deadline) && (
+                    <div className="flex items-center gap-1 text-xs font-medium text-destructive">
+                      <AlertTriangle className="h-3 w-3" /> Overdue
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Owner (optional)</Label>
@@ -404,7 +426,19 @@ function TaskPlanner() {
             </CardContent>
           </Card>
         ) : result ? (
-          <PlanView result={result} />
+          <PlanView
+            result={result}
+            completed={completed}
+            onToggle={(title) => {
+              setCompleted((prev) => {
+                const n = new Set(prev);
+                n.has(title) ? n.delete(title) : n.add(title);
+                return n;
+              });
+              setDirty(true);
+            }}
+            planTitle={tasks.find((t) => t.title.trim())?.title || "Task plan"}
+          />
         ) : (
           <Card className="flex flex-col items-center justify-center border-dashed py-12 text-center shadow-none">
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -429,6 +463,12 @@ function TaskPlanner() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return <label className="text-xs font-medium text-muted-foreground">{children}</label>;
+}
+
+function isOverdue(iso?: string) {
+  if (!iso) return false;
+  const d = new Date(iso + (iso.length === 10 ? "T23:59:59" : ""));
+  return !isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 
 const QUADRANT_META: Record<Quadrant, { title: string; sub: string; tone: string }> = {
@@ -468,13 +508,79 @@ function priorityBadge(p: PlannerInput["priority"]) {
   );
 }
 
-function PlanView({ result }: { result: PlannerResult }) {
+function PlanView({
+  result,
+  completed,
+  onToggle,
+  planTitle,
+}: {
+  result: PlannerResult;
+  completed: Set<string>;
+  onToggle: (title: string) => void;
+  planTitle: string;
+}) {
   const quadrants: Quadrant[] = ["do", "schedule", "delegate", "eliminate"];
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "High" | "Medium" | "Low">("all");
+  const total = result.prioritized.length;
+  const done = result.prioritized.filter((t) => completed.has(t.title)).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const markdown = plannerToMarkdown(result, completed, planTitle);
+
+  const matchesFilter = (t: PlannerResult["prioritized"][number]) => {
+    if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+    const isDone = completed.has(t.title);
+    if (filter === "active" && isDone) return false;
+    if (filter === "completed" && !isDone) return false;
+    return true;
+  };
+
   return (
     <div className="space-y-4">
+      <Card className="shadow-soft">
+        <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex-1">
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="font-medium">Progress</span>
+              <span className="text-muted-foreground">
+                {done} of {total} complete
+              </span>
+            </div>
+            <Progress value={pct} className="h-2" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <SelectTrigger className="h-8 w-32 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tasks</SelectItem>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={priorityFilter}
+              onValueChange={(v) => setPriorityFilter(v as typeof priorityFilter)}
+            >
+              <SelectTrigger className="h-8 w-32 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All priorities</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <ExportMenu markdown={markdown} filenameBase={planTitle || "task-plan"} />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
         {quadrants.map((q) => {
-          const items = result.prioritized.filter((t) => t.quadrant === q);
+          const items = result.prioritized.filter((t) => t.quadrant === q).filter(matchesFilter);
           const meta = QUADRANT_META[q];
           return (
             <Card key={q} className={`shadow-soft ${meta.tone}`}>
@@ -486,23 +592,39 @@ function PlanView({ result }: { result: PlannerResult }) {
                 {items.length === 0 && (
                   <p className="text-xs text-muted-foreground">No tasks here.</p>
                 )}
-                {items.map((t) => (
-                  <div key={t.title} className="rounded-lg border border-border bg-background p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">{t.title}</div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">{t.rationale}</div>
+                {items.map((t) => {
+                  const isDone = completed.has(t.title);
+                  return (
+                    <div
+                      key={t.title}
+                      className={`rounded-lg border border-border bg-background p-3 transition ${isDone ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 items-start gap-2">
+                          <Checkbox
+                            checked={isDone}
+                            onCheckedChange={() => onToggle(t.title)}
+                            className="mt-0.5"
+                            aria-label={`Mark ${t.title} complete`}
+                          />
+                          <div className="min-w-0">
+                            <div className={`truncate text-sm font-medium ${isDone ? "line-through" : ""}`}>
+                              {t.title}
+                            </div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">{t.rationale}</div>
+                          </div>
+                        </div>
+                        {priorityBadge(t.priority)}
                       </div>
-                      {priorityBadge(t.priority)}
+                      <div className="mt-2 flex flex-wrap gap-2 pl-6 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {t.duration} min
+                        </span>
+                        <span>· {t.deadline}</span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {t.duration} min
-                      </span>
-                      <span>· {t.deadline}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           );
