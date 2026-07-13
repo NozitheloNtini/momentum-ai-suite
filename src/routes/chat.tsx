@@ -207,25 +207,33 @@ function Chat() {
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col p-4 md:p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
           <Disclaimer className="flex-1" />
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onSave}
-            disabled={messages.length <= 1 || (!!savingId && !dirty)}
-          >
-            {savingId && !dirty ? (
-              <>
-                <Check className="mr-1.5 h-4 w-4" /> Saved
-              </>
-            ) : (
-              <>
-                <Save className="mr-1.5 h-4 w-4" /> Save
-              </>
-            )}
-          </Button>
-          <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
-            <Trash2 className="mr-1.5 h-4 w-4" /> New
-          </Button>
+          <div className="flex items-center gap-1">
+            <ExportMenu
+              markdown={chatToMarkdown(
+                messages.filter((m) => m.id !== "welcome").map((m) => ({ role: m.role, text: m.text })),
+              )}
+              filenameBase="momentum-chat"
+            />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSave}
+              disabled={messages.length <= 1 || (!!savingId && !dirty)}
+            >
+              {savingId && !dirty ? (
+                <>
+                  <Check className="mr-1.5 h-4 w-4" /> Saved
+                </>
+              ) : (
+                <>
+                  <Save className="mr-1.5 h-4 w-4" /> Save
+                </>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
+              <Trash2 className="mr-1.5 h-4 w-4" /> New
+            </Button>
+          </div>
         </div>
 
         <div
@@ -235,7 +243,7 @@ function Chat() {
         >
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {messages.map((m) => (
-              <Bubble key={m.id} msg={m} />
+              <Bubble key={m.id} msg={m} onNavigate={() => {}} />
             ))}
             {typing && <Typing />}
             {error && !typing && (
