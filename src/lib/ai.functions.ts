@@ -14,15 +14,8 @@ class AIUnavailableError extends Error {
 
 type ChatMessage = { role: "system" | "user" | "assistant"; content: string };
 
-async function callGateway(messages: ChatMessage[], json = false): Promise<string> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) {
-    throw new AIUnavailableError(
-      "no_key",
-      "AI service unavailable. Connect an OpenAI-compatible model to enable AI-generated responses.",
-    );
-  }
-  const res = await fetch(GATEWAY_URL, {
+async function callGatewayOnce(messages: ChatMessage[], json: boolean, key: string): Promise<Response> {
+  return fetch(GATEWAY_URL, {
     method: "POST",
     headers: {
       "content-type": "application/json",
@@ -34,8 +27,36 @@ async function callGateway(messages: ChatMessage[], json = false): Promise<strin
       ...(json ? { response_format: { type: "json_object" } } : {}),
     }),
   });
+}
+
+async function callGateway(messages: ChatMessage[], json = false): Promise<string> {
+  const key = process.env.LOVABLE_API_KEY;
+  if (!key) {
+    throw new AIUnavailableError(
+      "no_key",
+      "AI service unavailable. Connect an OpenAI-compatible model to enable AI-generated responses.",
+    );
+  }
+  // Single retry on transient upstream/network failures.
+  let res: Response | null = null;
+  let lastErr: unknown = null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      res = await callGatewayOnce(messages, json, key);
+      if (res.status < 500 || res.status === 402 || res.status === 429) break;
+    } catch (e) {
+      lastErr = e;
+    }
+    if (attempt === 0) await new Promise((r) => setTimeout(r, 600));
+  }
+  if (!res) {
+    throw new AIUnavailableError(
+      "upstream",
+      lastErr instanceof Error ? `Network error: ${lastErr.message}` : "Network error contacting AI.",
+    );
+  }
   if (res.status === 429) {
-    throw new AIUnavailableError("rate_limit", "AI is rate limited. Please try again shortly.");
+    throw new AIUnavailableError("rate_limit", "AI is rate limited. Please try again in a moment.");
   }
   if (res.status === 402) {
     throw new AIUnavailableError(
@@ -46,7 +67,7 @@ async function callGateway(messages: ChatMessage[], json = false): Promise<strin
   if (!res.ok) {
     throw new AIUnavailableError(
       "upstream",
-      "AI service unavailable. Connect an OpenAI-compatible model to enable AI-generated responses.",
+      "AI service is temporarily unavailable. Please try again.",
     );
   }
   const body = (await res.json()) as {

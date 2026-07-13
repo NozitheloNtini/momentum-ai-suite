@@ -15,6 +15,7 @@ import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import { CommandPalette } from "@/components/command-palette";
 import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
@@ -154,6 +155,7 @@ function AppFrame() {
       <SidebarInset className="flex min-h-screen flex-col bg-background">
         <Outlet />
       </SidebarInset>
+      <CommandPalette />
     </SidebarProvider>
   );
 }
