@@ -78,7 +78,7 @@ type ExtInput = PlannerInput & {
   category?: string;
 };
 type Draft = { id: string } & ExtInput;
-type Persisted = { tasks: ExtInput[]; result: PlannerResult | null };
+type Persisted = { tasks: ExtInput[]; result: PlannerResult | null; completed?: string[] };
 
 const emptyRow = (): Draft => ({
   id: crypto.randomUUID(),
@@ -103,6 +103,7 @@ function TaskPlanner() {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
+  const [completed, setCompleted] = useState<Set<string>>(new Set());
   useUnsavedChanges(dirty);
 
   useEffect(() => {
