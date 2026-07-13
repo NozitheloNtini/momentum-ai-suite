@@ -122,6 +122,7 @@ function TaskPlanner() {
             })),
           );
           setResult(d?.result ?? null);
+          setCompleted(new Set(d?.completed ?? []));
           setSavingId(item.id);
           setSavedAt(item.updated_at);
           setDirty(false);
@@ -131,6 +132,13 @@ function TaskPlanner() {
         return;
       }
       if (!id) {
+        const prefill = consumeTaskPrefill();
+        if (prefill && !cancelled) {
+          setTasks([{ ...emptyRow(), title: prefill.title, description: prefill.description || "" }]);
+          setDirty(true);
+          toast.success("Loaded task from chat");
+          return;
+        }
         const d = loadDraft<Persisted>("task_plan");
         if (d && !cancelled) {
           setTasks(
@@ -141,6 +149,7 @@ function TaskPlanner() {
             })),
           );
           setResult(d.result || null);
+          setCompleted(new Set(d.completed ?? []));
         }
       }
     })();
@@ -154,10 +163,11 @@ function TaskPlanner() {
       const persisted: Persisted = {
         tasks: tasks.map(({ id: _id, ...t }) => t),
         result,
+        completed: Array.from(completed),
       };
       saveDraft("task_plan", persisted);
     }
-  }, [tasks, result, savingId]);
+  }, [tasks, result, savingId, completed]);
 
   const markDirty = () => setDirty(true);
 
@@ -180,6 +190,7 @@ function TaskPlanner() {
     const persisted: Persisted = {
       tasks: tasks.map(({ id: _id, ...t }) => t),
       result: nextResult,
+      completed: Array.from(completed),
     };
     try {
       const first = tasks.find((t) => t.title.trim())?.title || "Task plan";
