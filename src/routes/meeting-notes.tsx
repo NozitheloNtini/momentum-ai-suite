@@ -477,6 +477,7 @@ function SummaryView({
             <CardTitle className="truncate text-lg">{data.title}</CardTitle>
           </div>
           <div className="flex items-center gap-1">
+            <ExportMenu markdown={meetingToMarkdown(data)} filenameBase={data.title || "meeting-summary"} />
             <Button size="sm" variant="outline" onClick={onSave} disabled={isSaved}>
               {isSaved ? (
                 <>
@@ -488,7 +489,7 @@ function SummaryView({
                 </>
               )}
             </Button>
-            <Button size="sm" variant="ghost" onClick={copy}>
+            <Button size="sm" variant="ghost" onClick={copy} title="Copy short summary">
               {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
             </Button>
           </div>
