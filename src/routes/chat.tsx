@@ -2,7 +2,18 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Send, Sparkles, Trash2, User, AlertTriangle, Save, Check } from "lucide-react";
+import {
+  Send,
+  Sparkles,
+  Trash2,
+  User,
+  AlertTriangle,
+  Save,
+  Check,
+  Copy,
+  FileText,
+  ListChecks,
+} from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
 import { Button } from "@/components/ui/button";
@@ -18,6 +29,9 @@ import {
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
 import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { ExportMenu } from "@/components/export-menu";
+import { chatToMarkdown, copyText } from "@/lib/exports";
+import { setNotePrefill, setTaskPrefill } from "@/lib/prefill";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
