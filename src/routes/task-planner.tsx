@@ -352,6 +352,11 @@ function TaskPlanner() {
                     onChange={(iso) => update(t.id, { deadline: iso })}
                     placeholder="Pick a date"
                   />
+                  {isOverdue(t.deadline) && (
+                    <div className="flex items-center gap-1 text-xs font-medium text-destructive">
+                      <AlertTriangle className="h-3 w-3" /> Overdue
+                    </div>
+                  )}
                 </div>
                 <div className="space-y-1.5">
                   <Label>Owner (optional)</Label>
@@ -420,7 +425,19 @@ function TaskPlanner() {
             </CardContent>
           </Card>
         ) : result ? (
-          <PlanView result={result} />
+          <PlanView
+            result={result}
+            completed={completed}
+            onToggle={(title) => {
+              setCompleted((prev) => {
+                const n = new Set(prev);
+                n.has(title) ? n.delete(title) : n.add(title);
+                return n;
+              });
+              setDirty(true);
+            }}
+            planTitle={tasks.find((t) => t.title.trim())?.title || "Task plan"}
+          />
         ) : (
           <Card className="flex flex-col items-center justify-center border-dashed py-12 text-center shadow-none">
             <div className="grid h-14 w-14 place-items-center rounded-2xl bg-primary/10 text-primary">
@@ -445,6 +462,12 @@ function TaskPlanner() {
 
 function Label({ children }: { children: React.ReactNode }) {
   return <label className="text-xs font-medium text-muted-foreground">{children}</label>;
+}
+
+function isOverdue(iso?: string) {
+  if (!iso) return false;
+  const d = new Date(iso + (iso.length === 10 ? "T23:59:59" : ""));
+  return !isNaN(d.getTime()) && d.getTime() < Date.now();
 }
 
 const QUADRANT_META: Record<Quadrant, { title: string; sub: string; tone: string }> = {
