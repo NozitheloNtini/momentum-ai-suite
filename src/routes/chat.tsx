@@ -243,7 +243,19 @@ function Chat() {
         >
           <div className="mx-auto flex max-w-3xl flex-col gap-4">
             {messages.map((m) => (
-              <Bubble key={m.id} msg={m} onNavigate={() => {}} />
+              <Bubble
+                key={m.id}
+                msg={m}
+                onSaveAsNote={() => {
+                  setNotePrefill({ notes: m.text });
+                  navigate({ to: "/meeting-notes", search: {} });
+                }}
+                onCreateTask={() => {
+                  const title = m.text.split("\n")[0].slice(0, 120);
+                  setTaskPrefill({ title, description: m.text });
+                  navigate({ to: "/task-planner", search: {} });
+                }}
+              />
             ))}
             {typing && <Typing />}
             {error && !typing && (
@@ -303,10 +315,19 @@ function Chat() {
   );
 }
 
-function Bubble({ msg }: { msg: Msg }) {
+function Bubble({
+  msg,
+  onSaveAsNote,
+  onCreateTask,
+}: {
+  msg: Msg;
+  onSaveAsNote: () => void;
+  onCreateTask: () => void;
+}) {
   const isUser = msg.role === "user";
+  const isWelcome = msg.id === "welcome";
   return (
-    <div className={`flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
+    <div className={`group flex items-start gap-3 ${isUser ? "flex-row-reverse" : ""}`}>
       <div
         className={`grid h-8 w-8 shrink-0 place-items-center rounded-full ${
           isUser
@@ -316,14 +337,34 @@ function Bubble({ msg }: { msg: Msg }) {
       >
         {isUser ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
       </div>
-      <div
-        className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-secondary text-secondary-foreground"
-        }`}
-      >
-        {msg.text}
+      <div className={`flex max-w-[80%] flex-col gap-1.5 ${isUser ? "items-end" : "items-start"}`}>
+        <div
+          className={`whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-secondary text-secondary-foreground"
+          }`}
+        >
+          {msg.text}
+        </div>
+        {!isUser && !isWelcome && (
+          <div className="flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100 no-print">
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2 text-xs"
+              onClick={() => copyText(msg.text, "Copied reply")}
+            >
+              <Copy className="mr-1 h-3 w-3" /> Copy
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onSaveAsNote}>
+              <FileText className="mr-1 h-3 w-3" /> Save as note
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={onCreateTask}>
+              <ListChecks className="mr-1 h-3 w-3" /> Create task
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
