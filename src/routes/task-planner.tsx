@@ -507,13 +507,79 @@ function priorityBadge(p: PlannerInput["priority"]) {
   );
 }
 
-function PlanView({ result }: { result: PlannerResult }) {
+function PlanView({
+  result,
+  completed,
+  onToggle,
+  planTitle,
+}: {
+  result: PlannerResult;
+  completed: Set<string>;
+  onToggle: (title: string) => void;
+  planTitle: string;
+}) {
   const quadrants: Quadrant[] = ["do", "schedule", "delegate", "eliminate"];
+  const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
+  const [priorityFilter, setPriorityFilter] = useState<"all" | "High" | "Medium" | "Low">("all");
+  const total = result.prioritized.length;
+  const done = result.prioritized.filter((t) => completed.has(t.title)).length;
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  const markdown = plannerToMarkdown(result, completed, planTitle);
+
+  const matchesFilter = (t: PlannerResult["prioritized"][number]) => {
+    if (priorityFilter !== "all" && t.priority !== priorityFilter) return false;
+    const isDone = completed.has(t.title);
+    if (filter === "active" && isDone) return false;
+    if (filter === "completed" && !isDone) return false;
+    return true;
+  };
+
   return (
     <div className="space-y-4">
+      <Card className="shadow-soft">
+        <CardContent className="flex flex-col gap-3 p-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex-1">
+            <div className="mb-1.5 flex items-center justify-between text-xs">
+              <span className="font-medium">Progress</span>
+              <span className="text-muted-foreground">
+                {done} of {total} complete
+              </span>
+            </div>
+            <Progress value={pct} className="h-2" />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={filter} onValueChange={(v) => setFilter(v as typeof filter)}>
+              <SelectTrigger className="h-8 w-32 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All tasks</SelectItem>
+                <SelectItem value="active">Active only</SelectItem>
+                <SelectItem value="completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={priorityFilter}
+              onValueChange={(v) => setPriorityFilter(v as typeof priorityFilter)}
+            >
+              <SelectTrigger className="h-8 w-32 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All priorities</SelectItem>
+                <SelectItem value="High">High</SelectItem>
+                <SelectItem value="Medium">Medium</SelectItem>
+                <SelectItem value="Low">Low</SelectItem>
+              </SelectContent>
+            </Select>
+            <ExportMenu markdown={markdown} filenameBase={planTitle || "task-plan"} />
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2">
         {quadrants.map((q) => {
-          const items = result.prioritized.filter((t) => t.quadrant === q);
+          const items = result.prioritized.filter((t) => t.quadrant === q).filter(matchesFilter);
           const meta = QUADRANT_META[q];
           return (
             <Card key={q} className={`shadow-soft ${meta.tone}`}>
@@ -525,23 +591,39 @@ function PlanView({ result }: { result: PlannerResult }) {
                 {items.length === 0 && (
                   <p className="text-xs text-muted-foreground">No tasks here.</p>
                 )}
-                {items.map((t) => (
-                  <div key={t.title} className="rounded-lg border border-border bg-background p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <div className="truncate text-sm font-medium">{t.title}</div>
-                        <div className="mt-0.5 text-xs text-muted-foreground">{t.rationale}</div>
+                {items.map((t) => {
+                  const isDone = completed.has(t.title);
+                  return (
+                    <div
+                      key={t.title}
+                      className={`rounded-lg border border-border bg-background p-3 transition ${isDone ? "opacity-60" : ""}`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex min-w-0 items-start gap-2">
+                          <Checkbox
+                            checked={isDone}
+                            onCheckedChange={() => onToggle(t.title)}
+                            className="mt-0.5"
+                            aria-label={`Mark ${t.title} complete`}
+                          />
+                          <div className="min-w-0">
+                            <div className={`truncate text-sm font-medium ${isDone ? "line-through" : ""}`}>
+                              {t.title}
+                            </div>
+                            <div className="mt-0.5 text-xs text-muted-foreground">{t.rationale}</div>
+                          </div>
+                        </div>
+                        {priorityBadge(t.priority)}
                       </div>
-                      {priorityBadge(t.priority)}
+                      <div className="mt-2 flex flex-wrap gap-2 pl-6 text-xs text-muted-foreground">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {t.duration} min
+                        </span>
+                        <span>· {t.deadline}</span>
+                      </div>
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {t.duration} min
-                      </span>
-                      <span>· {t.deadline}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </CardContent>
             </Card>
           );
