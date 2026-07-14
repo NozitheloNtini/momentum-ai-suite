@@ -195,14 +195,13 @@ Transcript:
 """
 ${data.notes}
 """`;
-    const raw = await callGateway(
+    const parsed = await callAndParse(
       [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      true,
+      (raw) => MeetingSchema.parse(extractJson(raw)),
     );
-    const parsed = MeetingSchema.parse(extractJson(raw));
     if (!parsed.title || parsed.title === "Not mentioned in the transcript.") {
       parsed.title = data.title || "Untitled meeting";
     }
