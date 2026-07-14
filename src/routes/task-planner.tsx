@@ -50,7 +50,8 @@ import {
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
 import { DatePicker, formatDeadline } from "@/components/date-picker";
-import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { plannerToMarkdown } from "@/lib/exports";
 import { consumeTaskPrefill } from "@/lib/prefill";
