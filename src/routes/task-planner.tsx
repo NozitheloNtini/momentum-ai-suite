@@ -106,7 +106,35 @@ function TaskPlanner() {
   const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
-  useUnsavedChanges(dirty);
+
+  const hasContent = tasks.some((t) => t.title.trim()) || !!result;
+  const autosave = useAutosave(
+    { tasks, result, completed: Array.from(completed), savingId },
+    async (val) => {
+      if (!user) return;
+      const first = val.tasks.find((t) => t.title.trim())?.title || "Task plan";
+      const item = await upsertItem({
+        id: val.savingId,
+        user_id: user.id,
+        kind: "task_plan",
+        title: first,
+        data: {
+          tasks: val.tasks.map(({ id: _id, ...t }) => t),
+          result: val.result,
+          completed: val.completed,
+        } satisfies Persisted,
+      });
+      if (!val.savingId) {
+        setSavingId(item.id);
+        navigate({ to: "/task-planner", search: { id: item.id }, replace: true });
+      }
+      setSavedAt(item.updated_at);
+      setDirty(false);
+      clearDraft("task_plan");
+      return { savedAt: item.updated_at };
+    },
+    { enabled: isAuthenticated && hasContent, delayMs: 2000 },
+  );
 
   useEffect(() => {
     let cancelled = false;
