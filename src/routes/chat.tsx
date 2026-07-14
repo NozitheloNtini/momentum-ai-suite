@@ -28,7 +28,8 @@ import {
   clearDraft,
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
-import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { chatToMarkdown, copyText } from "@/lib/exports";
 import { setNotePrefill, setTaskPrefill } from "@/lib/prefill";
