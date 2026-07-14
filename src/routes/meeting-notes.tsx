@@ -86,7 +86,31 @@ function MeetingNotes() {
   const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  useUnsavedChanges(dirty);
+
+  // Autosave for authenticated users. Fires ~1.5s after last change, or when
+  // the tab is hidden. Only saves once there's meaningful content.
+  const autosave = useAutosave(
+    { title, notes, result, savingId },
+    async (val) => {
+      if (!user) return;
+      const item = await upsertItem({
+        id: val.savingId,
+        user_id: user.id,
+        kind: "meeting_note",
+        title: val.title || val.result?.title || "Meeting summary",
+        data: { title: val.title, notes: val.notes, result: val.result } satisfies Draft,
+      });
+      if (!val.savingId) {
+        setSavingId(item.id);
+        navigate({ to: "/meeting-notes", search: { id: item.id }, replace: true });
+      }
+      setSavedAt(item.updated_at);
+      setDirty(false);
+      clearDraft("meeting_note");
+      return { savedAt: item.updated_at };
+    },
+    { enabled: isAuthenticated && (!!notes.trim() || !!result), delayMs: 2000 },
+  );
 
   // Load: cloud (if id) or local draft
   useEffect(() => {
