@@ -290,13 +290,8 @@ function TaskPlanner() {
     <>
       <TopBar
         title="AI Task Planner"
-        subtitle={
-          savedAt
-            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
-            : dirty
-              ? "Unsaved changes"
-              : "Prioritize with the Eisenhower Matrix"
-        }
+        subtitle="Prioritize with the Eisenhower Matrix"
+        right={isAuthenticated ? <SaveStatus state={autosave.state} /> : undefined}
       />
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-8">
         <Card className="shadow-soft">
