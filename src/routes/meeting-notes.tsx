@@ -235,15 +235,11 @@ function MeetingNotes() {
     <>
       <TopBar
         title="Meeting Notes Summarizer"
-        subtitle={
-          savedAt
-            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
-            : dirty
-              ? "Unsaved changes"
-              : "Turn raw notes into a clean, shareable recap"
-        }
+        subtitle="Turn raw notes into a clean, shareable recap"
+        right={isAuthenticated ? <SaveStatus state={autosave.state} /> : undefined}
       />
       <div className="mx-auto grid w-full max-w-7xl gap-6 p-4 md:p-8 lg:grid-cols-5">
+
         <Card className="lg:col-span-2 shadow-soft h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
