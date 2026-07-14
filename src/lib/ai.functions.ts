@@ -260,14 +260,13 @@ Return STRICT JSON only:
   "risks": [string]
 }`;
     const user = `Tasks (JSON):\n${JSON.stringify(data.tasks, null, 2)}`;
-    const raw = await callGateway(
+    return await callAndParse(
       [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      true,
+      (raw) => PlannerResultSchema.parse(extractJson(raw)),
     );
-    return PlannerResultSchema.parse(extractJson(raw));
   });
 
 // ---------- Chat ----------
