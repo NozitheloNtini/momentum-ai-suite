@@ -81,16 +81,64 @@ async function callGateway(messages: ChatMessage[], json = false): Promise<strin
 }
 
 function extractJson(raw: string): unknown {
-  const trimmed = raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/```$/, "").trim();
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    const start = trimmed.indexOf("{");
-    const end = trimmed.lastIndexOf("}");
-    if (start >= 0 && end > start) {
-      return JSON.parse(trimmed.slice(start, end + 1));
+  let cleaned = raw
+    .trim()
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/```\s*$/i, "")
+    .trim();
+  // eslint-disable-next-line no-control-regex
+  cleaned = cleaned.replace(/^\uFEFF/, "").replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g, "");
+  const tryParse = (s: string): unknown => {
+    try {
+      return JSON.parse(s);
+    } catch {
+      return JSON.parse(s.replace(/,(\s*[}\]])/g, "$1"));
     }
-    throw new Error("Model returned invalid JSON");
+  };
+  try {
+    return tryParse(cleaned);
+  } catch {
+    const firstObj = cleaned.indexOf("{");
+    const firstArr = cleaned.indexOf("[");
+    const start =
+      firstObj === -1 ? firstArr : firstArr === -1 ? firstObj : Math.min(firstObj, firstArr);
+    if (start < 0) throw new Error("Model returned invalid JSON");
+    const closeChar = cleaned[start] === "{" ? "}" : "]";
+    const end = cleaned.lastIndexOf(closeChar);
+    if (end <= start) throw new Error("Model returned invalid JSON");
+    return tryParse(cleaned.slice(start, end + 1));
+  }
+}
+
+async function callAndParse<T>(
+  messages: ChatMessage[],
+  parse: (raw: string) => T,
+): Promise<T> {
+  const raw = await callGateway(messages, true);
+  try {
+    return parse(raw);
+  } catch (err) {
+    console.warn("AI JSON parse failed, retrying once", err);
+    const raw2 = await callGateway(
+      [
+        ...messages,
+        {
+          role: "system",
+          content:
+            "Your previous reply was not valid JSON. Reply again with ONLY the JSON object, no prose, no markdown code fences.",
+        },
+      ],
+      true,
+    );
+    try {
+      return parse(raw2);
+    } catch (err2) {
+      console.error("AI JSON parse failed after retry", err2);
+      throw new AIUnavailableError(
+        "upstream",
+        "The AI returned a response we couldn't read. Please try again.",
+      );
+    }
   }
 }
 
@@ -147,14 +195,13 @@ Transcript:
 """
 ${data.notes}
 """`;
-    const raw = await callGateway(
+    const parsed = await callAndParse(
       [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      true,
+      (raw) => MeetingSchema.parse(extractJson(raw)),
     );
-    const parsed = MeetingSchema.parse(extractJson(raw));
     if (!parsed.title || parsed.title === "Not mentioned in the transcript.") {
       parsed.title = data.title || "Untitled meeting";
     }
@@ -213,14 +260,13 @@ Return STRICT JSON only:
   "risks": [string]
 }`;
     const user = `Tasks (JSON):\n${JSON.stringify(data.tasks, null, 2)}`;
-    const raw = await callGateway(
+    return await callAndParse(
       [
         { role: "system", content: system },
         { role: "user", content: user },
       ],
-      true,
+      (raw) => PlannerResultSchema.parse(extractJson(raw)),
     );
-    return PlannerResultSchema.parse(extractJson(raw));
   });
 
 // ---------- Chat ----------

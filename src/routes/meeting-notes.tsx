@@ -43,7 +43,8 @@ import {
   clearDraft,
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
-import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { meetingToMarkdown } from "@/lib/exports";
 import { consumeNotePrefill } from "@/lib/prefill";
@@ -85,7 +86,31 @@ function MeetingNotes() {
   const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  useUnsavedChanges(dirty);
+
+  // Autosave for authenticated users. Fires ~1.5s after last change, or when
+  // the tab is hidden. Only saves once there's meaningful content.
+  const autosave = useAutosave(
+    { title, notes, result, savingId },
+    async (val) => {
+      if (!user) return;
+      const item = await upsertItem({
+        id: val.savingId,
+        user_id: user.id,
+        kind: "meeting_note",
+        title: val.title || val.result?.title || "Meeting summary",
+        data: { title: val.title, notes: val.notes, result: val.result } satisfies Draft,
+      });
+      if (!val.savingId) {
+        setSavingId(item.id);
+        navigate({ to: "/meeting-notes", search: { id: item.id }, replace: true });
+      }
+      setSavedAt(item.updated_at);
+      setDirty(false);
+      clearDraft("meeting_note");
+      return { savedAt: item.updated_at };
+    },
+    { enabled: isAuthenticated && (!!notes.trim() || !!result), delayMs: 2000 },
+  );
 
   // Load: cloud (if id) or local draft
   useEffect(() => {
@@ -210,15 +235,11 @@ function MeetingNotes() {
     <>
       <TopBar
         title="Meeting Notes Summarizer"
-        subtitle={
-          savedAt
-            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
-            : dirty
-              ? "Unsaved changes"
-              : "Turn raw notes into a clean, shareable recap"
-        }
+        subtitle="Turn raw notes into a clean, shareable recap"
+        right={isAuthenticated ? <SaveStatus state={autosave.state} /> : undefined}
       />
       <div className="mx-auto grid w-full max-w-7xl gap-6 p-4 md:p-8 lg:grid-cols-5">
+
         <Card className="lg:col-span-2 shadow-soft h-fit">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">

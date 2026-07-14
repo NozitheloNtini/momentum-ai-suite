@@ -14,6 +14,7 @@ export function renderErrorPage(): string {
       a, button { padding: 0.5rem 1rem; border-radius: 0.375rem; font: inherit; cursor: pointer; text-decoration: none; border: 1px solid transparent; }
       .primary { background: #111; color: #fff; }
       .secondary { background: #fff; color: #111; border-color: #d1d5db; }
+      .primary[disabled] { opacity: 0.6; cursor: wait; }
     </style>
   </head>
   <body>
@@ -21,10 +22,30 @@ export function renderErrorPage(): string {
       <h1>This page didn't load</h1>
       <p>Something went wrong on our end. You can try refreshing or head back home.</p>
       <div class="actions">
-        <button class="primary" onclick="location.reload()">Try again</button>
+        <button id="retry" class="primary">Try again</button>
         <a class="secondary" href="/">Go home</a>
       </div>
     </div>
+    <script>
+      (function () {
+        var btn = document.getElementById('retry');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          btn.disabled = true;
+          btn.textContent = 'Retrying…';
+          // Bypass any stale cached error response by adding a cache-busting param
+          // to the current URL. Falls back to a plain reload if URL parsing fails.
+          try {
+            var url = new URL(window.location.href);
+            url.searchParams.set('_retry', String(Date.now()));
+            window.location.replace(url.toString());
+          } catch (e) {
+            window.location.reload();
+          }
+        });
+      })();
+    </script>
   </body>
 </html>`;
 }
+

@@ -50,7 +50,8 @@ import {
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
 import { DatePicker, formatDeadline } from "@/components/date-picker";
-import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { plannerToMarkdown } from "@/lib/exports";
 import { consumeTaskPrefill } from "@/lib/prefill";
@@ -105,7 +106,35 @@ function TaskPlanner() {
   const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
-  useUnsavedChanges(dirty);
+
+  const hasContent = tasks.some((t) => t.title.trim()) || !!result;
+  const autosave = useAutosave(
+    { tasks, result, completed: Array.from(completed), savingId },
+    async (val) => {
+      if (!user) return;
+      const first = val.tasks.find((t) => t.title.trim())?.title || "Task plan";
+      const item = await upsertItem({
+        id: val.savingId,
+        user_id: user.id,
+        kind: "task_plan",
+        title: first,
+        data: {
+          tasks: val.tasks.map(({ id: _id, ...t }) => t),
+          result: val.result,
+          completed: val.completed,
+        } satisfies Persisted,
+      });
+      if (!val.savingId) {
+        setSavingId(item.id);
+        navigate({ to: "/task-planner", search: { id: item.id }, replace: true });
+      }
+      setSavedAt(item.updated_at);
+      setDirty(false);
+      clearDraft("task_plan");
+      return { savedAt: item.updated_at };
+    },
+    { enabled: isAuthenticated && hasContent, delayMs: 2000 },
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -261,13 +290,8 @@ function TaskPlanner() {
     <>
       <TopBar
         title="AI Task Planner"
-        subtitle={
-          savedAt
-            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
-            : dirty
-              ? "Unsaved changes"
-              : "Prioritize with the Eisenhower Matrix"
-        }
+        subtitle="Prioritize with the Eisenhower Matrix"
+        right={isAuthenticated ? <SaveStatus state={autosave.state} /> : undefined}
       />
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 p-4 md:p-8">
         <Card className="shadow-soft">

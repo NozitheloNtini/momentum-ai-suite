@@ -28,7 +28,8 @@ import {
   clearDraft,
 } from "@/lib/persistence";
 import { GuestSaveDialog } from "@/components/guest-save-dialog";
-import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
+import { useAutosave } from "@/hooks/use-autosave";
+import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { chatToMarkdown, copyText } from "@/lib/exports";
 import { setNotePrefill, setTaskPrefill } from "@/lib/prefill";
@@ -76,10 +77,8 @@ function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | undefined>(id);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  useUnsavedChanges(dirty);
 
   useEffect(() => {
     let cancelled = false;
@@ -92,7 +91,6 @@ function Chat() {
           setMessages(d?.messages?.length ? d.messages : [GREETING]);
           setSavingId(item.id);
           setSavedAt(item.updated_at);
-          setDirty(false);
         } catch (e) {
           toast.error(e instanceof Error ? e.message : "Failed to load");
         }
@@ -112,9 +110,10 @@ function Chat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, typing]);
 
+  // Guest drafts (local only).
   useEffect(() => {
-    if (!savingId) saveDraft("chat", { messages });
-  }, [messages, savingId]);
+    if (!isAuthenticated) saveDraft("chat", { messages });
+  }, [messages, isAuthenticated]);
 
   const titleFromMessages = (msgs: Msg[]) => {
     const firstUser = msgs.find((m) => m.role === "user");
@@ -122,25 +121,30 @@ function Chat() {
     return firstUser.text.slice(0, 60);
   };
 
-  const persist = async (msgs: Msg[]) => {
-    if (!user) return;
-    try {
+  // Autosave for authenticated users: only after the user has sent at least
+  // one message (avoid persisting the plain greeting).
+  const hasContent = messages.some((m) => m.id !== "welcome");
+  const autosave = useAutosave(
+    { messages, savingId },
+    async (val) => {
+      if (!user) return;
       const item = await upsertItem({
-        id: savingId,
+        id: val.savingId,
         user_id: user.id,
         kind: "chat",
-        title: titleFromMessages(msgs),
-        data: { messages: msgs },
+        title: titleFromMessages(val.messages),
+        data: { messages: val.messages },
       });
-      setSavingId(item.id);
+      if (!val.savingId) {
+        setSavingId(item.id);
+        navigate({ to: "/chat", search: { id: item.id }, replace: true });
+      }
       setSavedAt(item.updated_at);
-      setDirty(false);
       clearDraft("chat");
-      if (!id) navigate({ to: "/chat", search: { id: item.id }, replace: true });
-    } catch (e) {
-      console.error(e);
-    }
-  };
+      return { savedAt: item.updated_at };
+    },
+    { enabled: isAuthenticated && hasContent, delayMs: 1500 },
+  );
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -151,7 +155,6 @@ function Chat() {
     setInput("");
     setTyping(true);
     setError(null);
-    setDirty(true);
     try {
       const history = nextMessages
         .filter((m) => m.id !== "welcome")
@@ -162,7 +165,7 @@ function Chat() {
         { id: crypto.randomUUID(), role: "assistant" as const, text: reply },
       ];
       setMessages(finalMessages);
-      if (isAuthenticated) await persist(finalMessages);
+      // Autosave triggers automatically on messages change.
     } catch (e) {
       const msg =
         e instanceof Error
@@ -176,21 +179,21 @@ function Chat() {
   };
 
   const clear = () => {
-    if (dirty && !window.confirm("Discard this conversation?")) return;
+    if (hasContent && !window.confirm("Start a new conversation? This chat will remain in your library.")) return;
     setMessages([GREETING]);
     setError(null);
-    setDirty(false);
     setSavingId(undefined);
+    setSavedAt(null);
     clearDraft("chat");
     navigate({ to: "/chat", search: {}, replace: true });
   };
 
-  const onSave = async () => {
+  const onSaveClick = async () => {
     if (!isAuthenticated) {
       setGuestOpen(true);
       return;
     }
-    await persist(messages);
+    await autosave.flushNow();
     toast.success("Saved to your library");
   };
 
@@ -198,43 +201,35 @@ function Chat() {
     <>
       <TopBar
         title="AI Workplace Assistant"
-        subtitle={
-          savedAt
-            ? `Saved · last edited ${new Date(savedAt).toLocaleString()}`
-            : "Draft, summarize, and refine — instantly"
-        }
+        subtitle="Draft, summarize, and refine — instantly"
       />
       <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col p-4 md:p-6">
         <div className="mb-3 flex items-center justify-between gap-3">
           <Disclaimer className="flex-1" />
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-2">
+            {isAuthenticated && hasContent && <SaveStatus state={autosave.state} />}
             <ExportMenu
               markdown={chatToMarkdown(
                 messages.filter((m) => m.id !== "welcome").map((m) => ({ role: m.role, text: m.text })),
               )}
               filenameBase="momentum-chat"
             />
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onSave}
-              disabled={messages.length <= 1 || (!!savingId && !dirty)}
-            >
-              {savingId && !dirty ? (
-                <>
-                  <Check className="mr-1.5 h-4 w-4" /> Saved
-                </>
-              ) : (
-                <>
-                  <Save className="mr-1.5 h-4 w-4" /> Save
-                </>
-              )}
-            </Button>
+            {!isAuthenticated && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onSaveClick}
+                disabled={!hasContent}
+              >
+                <Save className="mr-1.5 h-4 w-4" /> Save
+              </Button>
+            )}
             <Button variant="ghost" size="sm" onClick={clear} className="shrink-0">
               <Trash2 className="mr-1.5 h-4 w-4" /> New
             </Button>
           </div>
         </div>
+
 
         <div
           ref={scrollRef}
