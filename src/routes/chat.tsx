@@ -77,10 +77,8 @@ function Chat() {
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | undefined>(id);
   const [savedAt, setSavedAt] = useState<string | null>(null);
-  const [dirty, setDirty] = useState(false);
   const [guestOpen, setGuestOpen] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  useUnsavedChanges(dirty);
 
   useEffect(() => {
     let cancelled = false;
