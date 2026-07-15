@@ -16,6 +16,7 @@ import {
   Save,
   Plus,
   CalendarPlus,
+  MessageSquare,
 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
