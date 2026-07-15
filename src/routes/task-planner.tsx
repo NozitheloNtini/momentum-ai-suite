@@ -544,6 +544,7 @@ function PlanView({
   onToggle: (title: string) => void;
   planTitle: string;
 }) {
+  const navigate = useNavigate();
   const quadrants: Quadrant[] = ["do", "schedule", "delegate", "eliminate"];
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "High" | "Medium" | "Low">("all");
