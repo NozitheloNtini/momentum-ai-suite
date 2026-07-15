@@ -12,11 +12,13 @@ import {
   Copy,
   Pencil,
   ExternalLink,
+  X,
 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   DropdownMenu,
@@ -24,6 +26,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -59,14 +68,50 @@ const KIND_META = {
   chat: { icon: MessageSquare, label: "Chat", path: "/chat" as const },
 } as const;
 
+type SortMode = "recent" | "oldest" | "az";
+
+// Extract a readable one-line preview from the item's stored payload.
+function previewOf(item: SavedItem): string {
+  const d = item.data as Record<string, unknown> | null | undefined;
+  if (!d) return "";
+  try {
+    if (item.kind === "meeting_note") {
+      const notes = typeof d.notes === "string" ? d.notes : "";
+      const result = d.result as { executiveSummary?: string } | null | undefined;
+      return (result?.executiveSummary || notes || "").replace(/\s+/g, " ").trim();
+    }
+    if (item.kind === "task_plan") {
+      const tasks = (d.tasks as { title?: string }[] | undefined) ?? [];
+      const titles = tasks
+        .map((t) => t.title?.trim())
+        .filter((t): t is string => !!t)
+        .slice(0, 3);
+      return titles.join(" · ");
+    }
+    if (item.kind === "chat") {
+      const msgs = (d.messages as { role: string; text: string; id?: string }[] | undefined) ?? [];
+      const firstUser = msgs.find((m) => m.role === "user" && m.id !== "welcome");
+      return (firstUser?.text || "").replace(/\s+/g, " ").trim();
+    }
+  } catch {
+    return "";
+  }
+  return "";
+}
+
 function LibraryPage() {
   const { isAuthenticated, mode } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<SavedItem[] | null>(null);
   const [tab, setTab] = useState<"all" | Kind>("all");
   const [q, setQ] = useState("");
+  const [sort, setSort] = useState<SortMode>("recent");
+  const [selectMode, setSelectMode] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const [renaming, setRenaming] = useState<SavedItem | null>(null);
   const [newTitle, setNewTitle] = useState("");
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const load = async () => {
     try {
@@ -83,10 +128,33 @@ function LibraryPage() {
   const filtered = useMemo(() => {
     const list = items ?? [];
     const needle = q.trim().toLowerCase();
-    return list
+    const scoped = list
       .filter((i) => tab === "all" || i.kind === tab)
       .filter((i) => (needle ? i.title.toLowerCase().includes(needle) : true));
-  }, [items, tab, q]);
+    const sorted = [...scoped];
+    if (sort === "recent") {
+      sorted.sort((a, b) => +new Date(b.updated_at) - +new Date(a.updated_at));
+    } else if (sort === "oldest") {
+      sorted.sort((a, b) => +new Date(a.updated_at) - +new Date(b.updated_at));
+    } else {
+      sorted.sort((a, b) => a.title.localeCompare(b.title));
+    }
+    return sorted;
+  }, [items, tab, q, sort]);
+
+  const toggleSelected = (id: string) =>
+    setSelected((prev) => {
+      const n = new Set(prev);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+
+  const clearSelection = () => {
+    setSelected(new Set());
+    setSelectMode(false);
+  };
+
+  const selectAllVisible = () => setSelected(new Set(filtered.map((i) => i.id)));
 
   const onDelete = async (item: SavedItem) => {
     if (!window.confirm(`Delete "${item.title}"? This cannot be undone.`)) return;
@@ -97,6 +165,21 @@ function LibraryPage() {
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Delete failed");
     }
+  };
+
+  const onBulkDelete = async () => {
+    if (selected.size === 0) return;
+    setBulkBusy(true);
+    const ids = Array.from(selected);
+    const results = await Promise.allSettled(ids.map((id) => deleteItem(id)));
+    const okIds = ids.filter((_, i) => results[i].status === "fulfilled");
+    const failCount = results.length - okIds.length;
+    setItems((prev) => prev?.filter((i) => !okIds.includes(i.id)) ?? prev);
+    setBulkBusy(false);
+    setBulkOpen(false);
+    clearSelection();
+    if (okIds.length) toast.success(`Deleted ${okIds.length} item${okIds.length > 1 ? "s" : ""}`);
+    if (failCount) toast.error(`${failCount} could not be deleted`);
   };
 
   const onDuplicate = async (item: SavedItem) => {
@@ -170,7 +253,7 @@ function LibraryPage() {
     <>
       <TopBar title="My Library" subtitle="Your saved work, synced across devices" />
       <div className="mx-auto w-full max-w-5xl space-y-4 p-4 md:p-8">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -180,7 +263,50 @@ function LibraryPage() {
               className="pl-9"
             />
           </div>
+          <Select value={sort} onValueChange={(v) => setSort(v as SortMode)}>
+            <SelectTrigger className="sm:w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Most recent</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="az">Title (A–Z)</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant={selectMode ? "secondary" : "outline"}
+            onClick={() => {
+              if (selectMode) clearSelection();
+              else setSelectMode(true);
+            }}
+          >
+            {selectMode ? "Done" : "Select"}
+          </Button>
         </div>
+
+        {selectMode && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/50 px-3 py-2 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="font-medium">{selected.size} selected</span>
+              <Button variant="ghost" size="sm" onClick={selectAllVisible}>
+                Select all
+              </Button>
+              {selected.size > 0 && (
+                <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+                  <X className="mr-1 h-3.5 w-3.5" /> Clear
+                </Button>
+              )}
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={selected.size === 0}
+              onClick={() => setBulkOpen(true)}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete selected
+            </Button>
+          </div>
+        )}
 
         <Tabs value={tab} onValueChange={(v) => setTab(v as typeof tab)}>
           <TabsList>
@@ -207,22 +333,39 @@ function LibraryPage() {
                 {filtered.map((it) => {
                   const meta = KIND_META[it.kind];
                   const Icon = meta.icon;
+                  const preview = previewOf(it);
+                  const isChecked = selected.has(it.id);
                   return (
                     <li key={it.id} className="flex items-center gap-3 p-4">
+                      {selectMode ? (
+                        <div className="grid h-9 w-9 shrink-0 place-items-center">
+                          <Checkbox
+                            checked={isChecked}
+                            onCheckedChange={() => toggleSelected(it.id)}
+                            aria-label={`Select ${it.title}`}
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => open(it)}
+                          className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
+                          aria-label="Open"
+                        >
+                          <Icon className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
-                        onClick={() => open(it)}
-                        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
-                        aria-label="Open"
-                      >
-                        <Icon className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => open(it)}
+                        onClick={() => (selectMode ? toggleSelected(it.id) : open(it))}
                         className="min-w-0 flex-1 text-left"
                       >
                         <div className="truncate text-sm font-medium hover:underline">
                           {it.title}
                         </div>
+                        {preview && (
+                          <div className="mt-0.5 line-clamp-1 text-xs text-foreground/70">
+                            {preview}
+                          </div>
+                        )}
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                           <span>{meta.label}</span>
                           <span>·</span>
@@ -231,40 +374,44 @@ function LibraryPage() {
                           <span>Edited {formatRelative(it.updated_at)}</span>
                         </div>
                       </button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => open(it)}
-                        aria-label="Open"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" aria-label="More">
-                            <span className="text-lg leading-none">⋯</span>
+                      {!selectMode && (
+                        <>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => open(it)}
+                            aria-label="Open"
+                          >
+                            <ExternalLink className="h-4 w-4" />
                           </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setRenaming(it);
-                              setNewTitle(it.title);
-                            }}
-                          >
-                            <Pencil className="mr-2 h-4 w-4" /> Rename
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => onDuplicate(it)}>
-                            <Copy className="mr-2 h-4 w-4" /> Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => onDelete(it)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" aria-label="More">
+                                <span className="text-lg leading-none">⋯</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setRenaming(it);
+                                  setNewTitle(it.title);
+                                }}
+                              >
+                                <Pencil className="mr-2 h-4 w-4" /> Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => onDuplicate(it)}>
+                                <Copy className="mr-2 h-4 w-4" /> Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => onDelete(it)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </>
+                      )}
                     </li>
                   );
                 })}
@@ -294,6 +441,33 @@ function LibraryPage() {
             </Button>
             <Button onClick={submitRename} disabled={!newTitle.trim()}>
               Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={bulkOpen} onOpenChange={(o) => !bulkBusy && setBulkOpen(o)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {selected.size} item{selected.size === 1 ? "" : "s"}?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This permanently removes the selected items from your library. This cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setBulkOpen(false)} disabled={bulkBusy}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={onBulkDelete} disabled={bulkBusy}>
+              {bulkBusy ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Deleting…
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
