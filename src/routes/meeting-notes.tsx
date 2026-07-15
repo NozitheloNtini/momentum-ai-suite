@@ -48,7 +48,7 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { meetingToMarkdown } from "@/lib/exports";
-import { consumeNotePrefill } from "@/lib/prefill";
+import { consumeNotePrefill, setChatPrefill } from "@/lib/prefill";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
