@@ -90,7 +90,12 @@ function Dashboard() {
     chat: items?.filter((i) => i.kind === "chat").length ?? 0,
     total: items?.length ?? 0,
   };
+  const oneWeekAgo = Date.now() - 7 * 86400000;
+  const thisWeek = (items ?? []).filter(
+    (i) => new Date(i.updated_at).getTime() >= oneWeekAgo,
+  ).length;
   const recent = (items ?? []).slice(0, 5);
+  const lastItem = (items ?? [])[0] ?? null;
 
   return (
     <>
