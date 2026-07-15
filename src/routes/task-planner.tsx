@@ -599,6 +599,19 @@ function PlanView({
                 <SelectItem value="Low">Low</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => {
+                setChatPrefill({
+                  input: `Here's my task plan. Help me refine it, spot blockers, and draft a status update:\n\n${markdown}`,
+                });
+                navigate({ to: "/chat", search: {} });
+              }}
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Discuss
+            </Button>
             <ExportMenu markdown={markdown} filenameBase={planTitle || "task-plan"} />
           </div>
         </CardContent>
