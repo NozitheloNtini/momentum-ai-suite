@@ -500,6 +500,19 @@ function SummaryView({
           </div>
           <div className="flex items-center gap-1">
             <ExportMenu markdown={meetingToMarkdown(data)} filenameBase={data.title || "meeting-summary"} />
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setChatPrefill({
+                  input: `Here's a meeting summary. Help me draft a follow-up email and identify open questions:\n\n${meetingToMarkdown(data)}`,
+                });
+                navigate({ to: "/chat", search: {} });
+              }}
+              title="Send this summary to the assistant"
+            >
+              <MessageSquare className="mr-1.5 h-4 w-4" /> Discuss
+            </Button>
             <Button size="sm" variant="outline" onClick={onSave} disabled={isSaved}>
               {isSaved ? (
                 <>
