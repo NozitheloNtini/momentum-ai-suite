@@ -55,7 +55,7 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { plannerToMarkdown } from "@/lib/exports";
-import { consumeTaskPrefill } from "@/lib/prefill";
+import { consumeTaskPrefill, setChatPrefill } from "@/lib/prefill";
 import { Progress } from "@/components/ui/progress";
 
 const searchSchema = z.object({ id: z.string().optional() });
