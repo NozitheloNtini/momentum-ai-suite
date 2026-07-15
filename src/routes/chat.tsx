@@ -97,6 +97,15 @@ function Chat() {
         return;
       }
       if (!id) {
+        const prefill = consumeChatPrefill();
+        if (prefill && !cancelled) {
+          if (prefill.autoSend) {
+            void send(prefill.input);
+          } else {
+            setInput(prefill.input);
+          }
+          return;
+        }
         const d = loadDraft<{ messages: Msg[] }>("chat");
         if (d?.messages?.length && !cancelled) setMessages(d.messages);
       }
@@ -104,6 +113,7 @@ function Chat() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, isAuthenticated]);
 
   useEffect(() => {
