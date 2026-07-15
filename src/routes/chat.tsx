@@ -32,7 +32,7 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { chatToMarkdown, copyText } from "@/lib/exports";
-import { setNotePrefill, setTaskPrefill } from "@/lib/prefill";
+import { setNotePrefill, setTaskPrefill, consumeChatPrefill } from "@/lib/prefill";
 
 const searchSchema = z.object({ id: z.string().optional() });
 
