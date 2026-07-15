@@ -1,364 +1,430 @@
-# 🚀 Momentum AI
+# AI Workplace Productivity Assistant - Momentum AI
 
-> An AI-powered workplace productivity platform designed to help professionals streamline meetings, organize tasks, and work more efficiently.
+A modern AI-powered workplace productivity platform designed to help professionals automate everyday work through intelligent meeting summarization, AI-assisted task planning, and workplace communication.
 
-Momentum AI is a modern, responsive SaaS web application that leverages AI to automate common workplace tasks. Inspired by platforms like Notion AI, Microsoft Copilot, and ChatGPT Enterprise, it combines intelligent automation with a clean, intuitive user experience.
-
-> **Status:** Interactive prototype with placeholder AI functionality. The application is architected for seamless integration with real AI providers such as OpenAI, Anthropic, or Google Gemini.
+Built as a portfolio project using **Lovable** for AI-assisted development, the application combines modern SaaS design, real AI capabilities, and connected productivity workflows.
 
 ---
 
-# 📖 About
+# Project Overview
 
-Momentum AI was built to demonstrate how artificial intelligence can enhance workplace productivity through intelligent automation.
+The objective of this project was to design and build an enterprise-style productivity platform that demonstrates how Artificial Intelligence can improve workplace efficiency.
 
-The project focuses on:
+Rather than focusing solely on generating code, this project emphasized:
 
-- AI-assisted meeting documentation
-- Intelligent task prioritization
-- Workplace AI assistance
-- Modern SaaS UI/UX
-- Responsive web design
-- Clean, scalable architecture
-- Future-ready AI integration
+- Requirements gathering
+- Prompt engineering
+- User experience design
+- Workflow integration
+- Functional testing
+- Debugging
+- Iterative refinement
+- AI integration
 
-It serves as both a portfolio project and a foundation for a production-ready AI productivity platform.
-
----
-
-# ✨ Features
-
-## 🏠 Smart Onboarding
-
-Momentum AI is designed with a user-friendly onboarding experience.
-
-### Current
-- Interactive dashboard
-- Demo AI workflows
-- Responsive navigation
-- Professional SaaS interface
-
-### Planned
-- Continue as Guest
-- User Sign Up & Login
-- Secure authentication with Supabase
-- Personalized dashboards
-- Persistent user data
-- Session management
+The project evolved through multiple development and testing cycles, transforming an initial prototype into a much more polished and realistic SaaS application.
 
 ---
 
-## 📝 Meeting Notes Summarizer
+# Features
 
-Transform raw meeting notes into structured business documentation.
+## 🤖 AI Meeting Notes Summarizer
+
+Generate structured summaries from meeting transcripts.
 
 ### Features
 
 - Executive Summary
+- Meeting Objective
+- Participants
 - Key Discussion Points
-- Action Items
-- Task Owner
-- Priority Level
-- Deadlines
 - Decisions Made
-- Risks & Follow-ups
+- Action Items
+- Risks & Concerns
+- Next Meeting Detection
 
-Designed using structured prompt engineering to generate concise, professional, and actionable outputs.
+The Summarizer extracts information only from the provided transcript and avoids generating unsupported information.
+
+Action items can be sent directly to the Task Planner.
 
 ---
 
-## ✅ AI Task Planner
+## 📋 AI Task Planner
 
-Convert an overwhelming to-do list into a prioritized action plan.
+Organize work using AI-assisted prioritization.
 
 ### Features
 
-- Eisenhower Matrix classification
-- Intelligent task prioritization
-- Daily scheduling
-- Time-blocking recommendations
-- Focus order suggestions
-- High-risk deadline detection
+- Eisenhower Matrix prioritization
+- AI-generated work schedule
+- Time-blocking suggestions
+- Due date management
 - Priority badges
-- Schedule visualization
+- Calendar date picker
+- Task categorization
+- Estimated duration
+
+Meeting action items can be imported directly into the planner.
 
 ---
 
 ## 💬 AI Workplace Assistant
 
-A conversational AI assistant built for professional communication.
+An AI assistant designed for professional workplace communication.
 
-### Capabilities
+### Supports
 
-- Email drafting
-- Email summarization
-- Meeting agenda generation
+- Drafting emails
+- Replying to emails
+- Professional rewriting
 - Report improvement
-- Workplace writing assistance
-- General productivity support
+- Meeting agenda creation
+- Document summarization
+- Brainstorming
+- Workplace questions
 
-### UI Features
-
-- Chat history
-- Suggested prompts
-- Typing indicator
-- Auto-scroll
-- Clear conversation option
+Responses are generated dynamically using the user's input.
 
 ---
 
 ## 📊 Dashboard
 
-A centralized productivity dashboard providing quick access to every AI tool.
+Provides an overview of user productivity.
 
-Includes:
+### Displays
 
-- Meeting Notes card
-- AI Task Planner card
-- AI Assistant card
-- Recent Activity
-- Productivity Tips
-- AI Usage Statistics (prototype)
+- AI usage statistics
+- Meeting summaries created
+- Task plans generated
+- AI chat history
+- Recent activity
 
----
-
-## ⚙️ Settings
-
-Configure the application experience.
-
-Current options include:
-
-- Profile preferences
-- Placeholder AI configuration
-- Future AI provider settings
+Guest users view sample data while authenticated users see their own activity.
 
 ---
 
-# ⚠️ Disclaimer
+## 📚 Library
 
-> **AI-generated content may require human review before being used for business decisions or official communication.**
+A centralized workspace that stores user content.
 
----
+### Includes
 
-# 🎨 Design
+- Meeting summaries
+- Task plans
+- AI conversations
 
-Momentum AI follows modern SaaS design principles.
+Saved items can be:
 
-### Design Highlights
-
-- Clean and minimal interface
-- Professional blue, white, and gray color palette
-- Sidebar navigation
-- Dashboard layout
-- Card-based UI
-- Rounded corners
-- Subtle shadows
-- Smooth micro-interactions
-- Responsive design for desktop, tablet, and mobile
-- Accessible color contrast
-
-Built using **shadcn/ui** and **Tailwind CSS v4**.
+- Opened
+- Edited
+- Renamed
+- Deleted
+- Duplicated
+- Filtered
+- Searched
 
 ---
 
-# 🛠 Tech Stack
+## 🔐 Authentication
 
-| Technology | Purpose |
-|------------|---------|
-| React 19 | Frontend Framework |
-| TanStack Start | Full-stack React Framework |
-| TanStack Router | File-based Routing |
-| TypeScript | Type Safety |
-| Tailwind CSS v4 | Styling |
-| shadcn/ui | UI Components |
-| Radix UI | Accessible UI Primitives |
-| Bun | Package Manager |
-| Vite 7 | Build Tool |
+Supports:
 
----
-
-# 🚀 Getting Started
-
-## Prerequisites
-
-Install one of the following:
-
-- Bun (recommended)
-- Node.js 20+
-
----
-
-## Installation
-
-```bash
-bun install
-```
-
----
-
-## Start Development Server
-
-```bash
-bun run dev
-```
-
-The application will be available at:
-
-```
-http://localhost:8080
-```
-
----
-
-## Production Build
-
-```bash
-bun run build
-```
-
----
-
-# 📁 Project Structure
-
-```
-src/
-├── components/
-│   ├── Sidebar
-│   ├── TopBar
-│   ├── Dashboard Cards
-│   ├── Disclaimer
-│   └── Shared UI Components
-│
-├── hooks/
-│   └── Custom React Hooks
-│
-├── lib/
-│   └── mock-ai.ts
-│
-├── routes/
-│   ├── __root.tsx
-│   ├── index.tsx
-│   ├── meeting-notes.tsx
-│   ├── task-planner.tsx
-│   ├── chat.tsx
-│   └── settings.tsx
-│
-└── styles.css
-```
-
----
-
-# 🤖 AI Architecture
-
-Momentum AI currently uses a mock AI service located in:
-
-```
-src/lib/mock-ai.ts
-```
-
-Each feature is built around structured prompt engineering, making it easy to replace placeholder logic with real AI providers.
-
-Supported future integrations include:
-
-- OpenAI
-- Anthropic Claude
-- Google Gemini
-- Azure OpenAI
-- Lovable AI Gateway
-
-Example:
-
-```ts
-export async function summarizeMeeting(title: string, notes: string) {
-  const res = await fetch("/api/summarize", {
-    method: "POST",
-    body: JSON.stringify({ title, notes }),
-  });
-
-  return res.json();
-}
-```
-
-Because the AI layer is isolated, no UI changes are required when switching to a production AI provider.
-
----
-
-# 🔮 Roadmap
-
-Planned improvements include:
-
+- Sign Up
+- Log In
 - Guest Mode
-- User Authentication (Supabase Auth)
-- Personal dashboards
-- Persistent cloud storage
-- Chat history synchronization
-- Calendar integration
-- Microsoft Outlook integration
-- Microsoft Teams integration
-- Google Calendar support
-- Export summaries to PDF
-- Export meeting notes to Word
-- Team collaboration
-- Dark Mode
-- AI analytics dashboard
-- Mobile optimization
+- Password Recovery
+- Email Verification
+
+Each authenticated user has their own private workspace.
 
 ---
 
-# 📸 Screenshots
+# Workflow Integration
 
-Add screenshots of the application here.
+The application was designed so features work together instead of operating independently.
 
-Suggested images:
+### Connected Workflows
 
-- Landing Page
+Meeting Summary ➜ Task Planner
+
+- Detects action items
+- Detects owners
+- Detects deadlines
+- Detects next meetings
+
+Users can:
+
+- Add selected tasks
+- Add all tasks
+- Create reminders
+- Generate preparation checklists
+
+This creates a seamless productivity workflow.
+
+---
+
+# User Experience
+
+Designed with a modern SaaS experience in mind.
+
+### Includes
+
+- Responsive design
+- Dashboard layout
+- Sidebar navigation
+- Card-based interface
+- Loading indicators
+- Empty states
+- Success notifications
+- Error handling
+- Smooth transitions
+- Accessible interface
+
+---
+
+# AI Integration
+
+The application uses the **OpenAI Responses API** to generate live AI outputs.
+
+### AI Features
+
+- Meeting transcript analysis
+- Task planning assistance
+- Workplace assistant conversations
+
+Implementation includes:
+
+- Secure backend API endpoint
+- Environment variable API key storage
+- Loading states
+- Error handling
+- Retry logic
+- Graceful AI fallback handling
+
+---
+
+# Development Journey
+
+## Phase 1 – Initial Prototype
+
+Initial application included:
+
 - Dashboard
 - Meeting Notes Summarizer
-- AI Task Planner
-- AI Assistant
-- Mobile Responsive View
+- Task Planner
+- AI Workplace Assistant
+- Modern SaaS interface
+
+This version relied heavily on placeholder responses.
 
 ---
 
-# 🎯 Project Goals
+## Phase 2 – Prompt Engineering & AI Improvements
 
-This project demonstrates practical skills in:
+The application was refined to remove hardcoded responses.
 
-- Modern React development
-- Responsive UI design
-- Component-based architecture
-- TypeScript
-- Prompt engineering
-- AI-ready application design
-- SaaS product development
-- User experience design
-- Scalable frontend architecture
+Improvements included:
 
----
-
-# 📄 License
-
-This project is licensed under the **MIT License**.
-
-Feel free to use, modify, and build upon it.
+- Better AI prompts
+- Structured outputs
+- Professional formatting
+- Removal of placeholder users
+- Guest mode support
+- Improved authentication flow
 
 ---
 
-# 🙌 Acknowledgements
+## Phase 3 – Workflow Integration
 
-Built with:
+Features were connected together to improve usability.
 
-- ❤️ Lovable
-- React
-- TanStack Start
-- Tailwind CSS
-- shadcn/ui
-- Radix UI
+Added:
+
+- Meeting Summary → Task Planner integration
+- Persistent Library
+- Dashboard activity updates
+- Better navigation
+- Improved task management
 
 ---
 
-## ⭐ Future Vision
+## Phase 4 – Quality Assurance & Debugging
 
-Momentum AI aims to evolve into a full-featured AI workplace productivity platform where users can securely manage meetings, organize work, collaborate efficiently, and leverage AI to reduce repetitive administrative tasks.
+The project entered an extensive testing phase.
 
-The long-term vision is to deliver a production-ready SaaS experience that combines intelligent automation with an intuitive user interface for modern professionals.
+Testing included:
+
+- Long meeting transcripts
+- AI-generated summaries
+- Workplace assistant prompts
+- Task planning
+- Authentication
+- Navigation
+- Session persistence
+- Dashboard behaviour
+- Browser refresh testing
+
+---
+
+# Bugs Identified & Improvements
+
+During testing, several issues were discovered and resolved.
+
+## AI Placeholder Responses
+
+**Problem**
+
+Meeting summaries and chat responses returned unrelated hardcoded content.
+
+**Solution**
+
+Connected AI features to live AI generation using structured prompts.
+
+---
+
+## Hardcoded Demo User
+
+**Problem**
+
+The application always assumed the user was "Alex."
+
+**Solution**
+
+Implemented Guest Mode and user authentication.
+
+---
+
+## Task Planner
+
+**Problem**
+
+Preloaded tasks appeared instead of an empty planner.
+
+**Solution**
+
+Replaced with placeholders and user-generated tasks.
+
+---
+
+## Library
+
+**Problem**
+
+Saved items were static and could not be reopened.
+
+**Solution**
+
+Implemented functional saved workspaces.
+
+---
+
+## Dashboard
+
+**Problem**
+
+Dashboard displayed permanent sample activity.
+
+**Solution**
+
+Authenticated users now see real usage statistics and recent activity.
+
+---
+
+## State Management
+
+**Problem**
+
+Switching pages caused Meeting Notes, Task Planner, and AI Chat to lose progress.
+
+**Solution**
+
+Implemented persistent application state and automatic restoration.
+
+---
+
+## Auto Save
+
+**Problem**
+
+Users received constant "Unsaved Changes" warnings.
+
+**Solution**
+
+Implemented automatic background saving similar to modern SaaS platforms.
+
+---
+
+## AI Parsing
+
+**Problem**
+
+Large meeting transcripts occasionally produced JSON parsing errors.
+
+**Solution**
+
+Improved AI response validation and parsing with graceful error handling.
+
+---
+
+## Authentication
+
+**Problem**
+
+Email verification occasionally redirected to an expired callback URL despite successfully creating the account.
+
+**Solution**
+
+Improved authentication callbacks and session restoration.
+
+---
+
+# Technologies Used
+
+- **Lovable**
+- **React**
+- **TypeScript**
+- **Tailwind CSS**
+- **Supabase Authentication**
+- **OpenAI Responses API**
+- **Modern SaaS UI Components**
+
+---
+
+# Skills Demonstrated 
+This project demonstrates practical experience with:
+
+- Business Analysis
+- Prompt Engineering
+- Requirements Gathering
+- AI Integration
+- User Experience Design
+- Functional Testing
+- Debugging
+- Quality Assurance
+- Workflow Design
+- State Management
+- Authentication
+- SaaS Product Design
+- Iterative Software Development
+
+---
+
+# Future Improvements
+
+Potential future enhancements include:
+- Refresh error
+- Username display change
+- Google Calendar integration
+- Microsoft Outlook integration
+- File uploads
+- Voice transcription
+- Team collaboration
+- Shared workspaces
+- Role-based permissions
+- Analytics dashboard
+- Mobile application
+
+---
+
+# Disclaimer
+
+> **AI-generated content should always be reviewed by a human before being used for business decisions or official communication.**
