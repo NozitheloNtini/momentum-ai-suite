@@ -90,7 +90,12 @@ function Dashboard() {
     chat: items?.filter((i) => i.kind === "chat").length ?? 0,
     total: items?.length ?? 0,
   };
+  const oneWeekAgo = Date.now() - 7 * 86400000;
+  const thisWeek = (items ?? []).filter(
+    (i) => new Date(i.updated_at).getTime() >= oneWeekAgo,
+  ).length;
   const recent = (items ?? []).slice(0, 5);
+  const lastItem = (items ?? [])[0] ?? null;
 
   return (
     <>
@@ -136,6 +141,31 @@ function Dashboard() {
             </div>
           </div>
         </div>
+
+        {isAuthenticated && lastItem && (() => {
+          const meta = KIND_META[lastItem.kind];
+          const Icon = meta.icon;
+          return (
+            <button
+              onClick={() => navigate({ to: meta.path, search: { id: lastItem.id } })}
+              className="group flex items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left shadow-soft transition hover:border-primary/40 hover:shadow-glow"
+            >
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Continue where you left off
+                </div>
+                <div className="mt-0.5 truncate text-sm font-semibold">{lastItem.title}</div>
+                <div className="text-xs text-muted-foreground">
+                  {meta.label} · edited {formatRelative(lastItem.updated_at)}
+                </div>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+            </button>
+          );
+        })()}
 
         <div className="grid gap-4 md:grid-cols-3">
           {tools.map((t) => (
@@ -261,6 +291,13 @@ function Dashboard() {
                 <StatRow label="Meeting summaries" value={counts.meeting_note} loading={isAuthenticated && items === null} />
                 <StatRow label="Task plans" value={counts.task_plan} loading={isAuthenticated && items === null} />
                 <StatRow label="AI chats" value={counts.chat} loading={isAuthenticated && items === null} />
+                {isAuthenticated && (
+                  <StatRow
+                    label="Edited this week"
+                    value={thisWeek}
+                    loading={items === null}
+                  />
+                )}
                 <div className="border-t border-border pt-2">
                   <StatRow label="Total saved" value={counts.total} loading={isAuthenticated && items === null} bold />
                 </div>

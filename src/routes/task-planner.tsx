@@ -12,6 +12,7 @@ import {
   ListChecks,
   Save,
   Check,
+  MessageSquare,
 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
@@ -54,7 +55,7 @@ import { useAutosave } from "@/hooks/use-autosave";
 import { SaveStatus } from "@/components/save-status";
 import { ExportMenu } from "@/components/export-menu";
 import { plannerToMarkdown } from "@/lib/exports";
-import { consumeTaskPrefill } from "@/lib/prefill";
+import { consumeTaskPrefill, setChatPrefill } from "@/lib/prefill";
 import { Progress } from "@/components/ui/progress";
 
 const searchSchema = z.object({ id: z.string().optional() });
@@ -543,6 +544,7 @@ function PlanView({
   onToggle: (title: string) => void;
   planTitle: string;
 }) {
+  const navigate = useNavigate();
   const quadrants: Quadrant[] = ["do", "schedule", "delegate", "eliminate"];
   const [filter, setFilter] = useState<"all" | "active" | "completed">("all");
   const [priorityFilter, setPriorityFilter] = useState<"all" | "High" | "Medium" | "Low">("all");
@@ -597,6 +599,19 @@ function PlanView({
                 <SelectItem value="Low">Low</SelectItem>
               </SelectContent>
             </Select>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 gap-1.5 text-xs"
+              onClick={() => {
+                setChatPrefill({
+                  input: `Here's my task plan. Help me refine it, spot blockers, and draft a status update:\n\n${markdown}`,
+                });
+                navigate({ to: "/chat", search: {} });
+              }}
+            >
+              <MessageSquare className="h-3.5 w-3.5" /> Discuss
+            </Button>
             <ExportMenu markdown={markdown} filenameBase={planTitle || "task-plan"} />
           </div>
         </CardContent>

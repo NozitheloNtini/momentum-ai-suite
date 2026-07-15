@@ -4,10 +4,12 @@
 const KEYS = {
   task: "momentum_prefill_task",
   note: "momentum_prefill_note",
+  chat: "momentum_prefill_chat",
 } as const;
 
 export type TaskPrefill = { title: string; description?: string };
 export type NotePrefill = { title?: string; notes: string };
+export type ChatPrefill = { input: string; autoSend?: boolean };
 
 export function setTaskPrefill(p: TaskPrefill) {
   try {
@@ -36,6 +38,22 @@ export function consumeNotePrefill(): NotePrefill | null {
     if (!raw) return null;
     sessionStorage.removeItem(KEYS.note);
     return JSON.parse(raw) as NotePrefill;
+  } catch {
+    return null;
+  }
+}
+
+export function setChatPrefill(p: ChatPrefill) {
+  try {
+    sessionStorage.setItem(KEYS.chat, JSON.stringify(p));
+  } catch {}
+}
+export function consumeChatPrefill(): ChatPrefill | null {
+  try {
+    const raw = sessionStorage.getItem(KEYS.chat);
+    if (!raw) return null;
+    sessionStorage.removeItem(KEYS.chat);
+    return JSON.parse(raw) as ChatPrefill;
   } catch {
     return null;
   }
