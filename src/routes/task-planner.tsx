@@ -12,6 +12,7 @@ import {
   ListChecks,
   Save,
   Check,
+  MessageSquare,
 } from "lucide-react";
 import { TopBar } from "@/components/top-bar";
 import { Disclaimer } from "@/components/disclaimer";
