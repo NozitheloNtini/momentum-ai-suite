@@ -291,6 +291,13 @@ function Dashboard() {
                 <StatRow label="Meeting summaries" value={counts.meeting_note} loading={isAuthenticated && items === null} />
                 <StatRow label="Task plans" value={counts.task_plan} loading={isAuthenticated && items === null} />
                 <StatRow label="AI chats" value={counts.chat} loading={isAuthenticated && items === null} />
+                {isAuthenticated && (
+                  <StatRow
+                    label="Edited this week"
+                    value={thisWeek}
+                    loading={items === null}
+                  />
+                )}
                 <div className="border-t border-border pt-2">
                   <StatRow label="Total saved" value={counts.total} loading={isAuthenticated && items === null} bold />
                 </div>
