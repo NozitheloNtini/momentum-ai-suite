@@ -1,27 +1,28 @@
-# AI Workplace Productivity Assistant - Momentum AI
+# AI Workplace Productivity Assistant – Momentum AI
 
-A modern AI-powered workplace productivity platform designed to help professionals automate everyday work through intelligent meeting summarization, AI-assisted task planning, and workplace communication.
+A modern AI-powered workplace productivity platform designed to help professionals streamline everyday work through meeting summarization, AI-assisted task planning, and workplace communication.
 
-Built as a portfolio project using **Lovable** for AI-assisted development, the application combines modern SaaS design, real AI capabilities, and connected productivity workflows.
+Built as a portfolio project using **Lovable** for AI-assisted development, Momentum AI combines a modern SaaS interface with live AI capabilities and connected productivity workflows.
 
 ---
 
 # Project Overview
 
-The objective of this project was to design and build an enterprise-style productivity platform that demonstrates how Artificial Intelligence can improve workplace efficiency.
+The objective of this project was to design and build an enterprise-style productivity platform that demonstrates how Artificial Intelligence can support workplace efficiency.
 
 Rather than focusing solely on generating code, this project emphasized:
 
-- Requirements gathering
+- Requirements gathering and refinement
 - Prompt engineering
 - User experience design
 - Workflow integration
 - Functional testing
-- Debugging
-- Iterative refinement
+- Debugging and troubleshooting
+- State management and persistence
 - AI integration
+- Iterative development and improvement
 
-The project evolved through multiple development and testing cycles, transforming an initial prototype into a much more polished and realistic SaaS application.
+The application evolved through multiple development and testing cycles, transforming an initial prototype into a more functional and polished productivity platform.
 
 ---
 
@@ -29,7 +30,7 @@ The project evolved through multiple development and testing cycles, transformin
 
 ## 🤖 AI Meeting Notes Summarizer
 
-Generate structured summaries from meeting transcripts.
+Generates structured summaries from meeting transcripts using live AI.
 
 ### Features
 
@@ -39,56 +40,55 @@ Generate structured summaries from meeting transcripts.
 - Key Discussion Points
 - Decisions Made
 - Action Items
-- Risks & Concerns
+- Risks and Concerns
 - Next Meeting Detection
 
-The Summarizer extracts information only from the provided transcript and avoids generating unsupported information.
+The summarizer is designed to extract relevant information from the supplied transcript while avoiding unsupported details.
 
-Action items can be sent directly to the Task Planner.
+Meeting action items can be sent directly to the Task Planner, helping users turn meeting discussions into actionable work.
 
 ---
 
 ## 📋 AI Task Planner
 
-Organize work using AI-assisted prioritization.
+Helps users organise tasks using AI-assisted prioritisation and scheduling.
 
 ### Features
 
-- Eisenhower Matrix prioritization
-- AI-generated work schedule
+- Eisenhower Matrix prioritisation
+- AI-generated work schedules
 - Time-blocking suggestions
 - Due date management
-- Priority badges
+- Priority indicators
 - Calendar date picker
-- Task categorization
-- Estimated duration
+- Task categorisation
+- Estimated task duration
 
-Meeting action items can be imported directly into the planner.
+Users can create their own tasks or import action items from meeting summaries, connecting planning with meeting outcomes.
 
 ---
 
 ## 💬 AI Workplace Assistant
 
-An AI assistant designed for professional workplace communication.
+An AI assistant designed to support professional communication and everyday workplace tasks.
 
 ### Supports
 
-- Drafting emails
-- Replying to emails
+- Drafting and replying to emails
 - Professional rewriting
 - Report improvement
 - Meeting agenda creation
-- Document summarization
+- Document summarisation
 - Brainstorming
-- Workplace questions
+- Workplace-related questions
 
-Responses are generated dynamically using the user's input.
+Responses are generated dynamically based on user input, with conversation history passed to the AI to maintain context.
 
 ---
 
 ## 📊 Dashboard
 
-Provides an overview of user productivity.
+Provides an overview of user productivity and recent activity.
 
 ### Displays
 
@@ -98,13 +98,13 @@ Provides an overview of user productivity.
 - AI chat history
 - Recent activity
 
-Guest users view sample data while authenticated users see their own activity.
+Authenticated users see their own activity and statistics from persistent application data. Guest users see clearly labelled sample activity to demonstrate the interface.
 
 ---
 
 ## 📚 Library
 
-A centralized workspace that stores user content.
+A centralised workspace for managing saved content.
 
 ### Includes
 
@@ -112,15 +112,17 @@ A centralized workspace that stores user content.
 - Task plans
 - AI conversations
 
-Saved items can be:
+Saved items support actions such as:
 
-- Opened
-- Edited
-- Renamed
-- Deleted
-- Duplicated
-- Filtered
-- Searched
+- Opening
+- Editing
+- Renaming
+- Deleting
+- Duplicating
+- Filtering
+- Searching
+
+The Library helps users return to previously generated content instead of losing it when navigating between features.
 
 ---
 
@@ -134,71 +136,78 @@ Supports:
 - Password Recovery
 - Email Verification
 
-Each authenticated user has their own private workspace.
+Authenticated users have their own workspace, with session restoration supporting continuity when returning to the application.
 
 ---
 
 # Workflow Integration
 
-The application was designed so features work together instead of operating independently.
+The application was designed to connect features rather than treat them as separate tools.
 
-### Connected Workflows
+### Connected Workflow: Meeting Summary → Task Planner
 
-Meeting Summary ➜ Task Planner
+The summarizer identifies relevant meeting information, including:
 
-- Detects action items
-- Detects owners
-- Detects deadlines
-- Detects next meetings
+- Action items
+- Assigned owners
+- Deadlines
+- Next meeting details
 
-Users can:
+Users can then:
 
-- Add selected tasks
-- Add all tasks
+- Add selected action items to the Task Planner
+- Import multiple tasks
 - Create reminders
-- Generate preparation checklists
+- Generate meeting preparation checklists
 
-This creates a seamless productivity workflow.
+This workflow demonstrates how meeting information can be transformed into practical next steps.
 
 ---
 
 # User Experience
 
-Designed with a modern SaaS experience in mind.
+Momentum AI follows a modern SaaS design approach, with an emphasis on usability and consistency.
 
 ### Includes
 
-- Responsive design
+- Responsive interface
 - Dashboard layout
 - Sidebar navigation
-- Card-based interface
+- Card-based design
 - Loading indicators
 - Empty states
 - Success notifications
 - Error handling
 - Smooth transitions
-- Accessible interface
+- Consistent navigation between features
+
+Additional development focused on preserving user progress, improving session restoration, and making saved content accessible across the application.
 
 ---
 
 # AI Integration
 
-The application uses the **OpenAI Responses API** to generate live AI outputs.
+Momentum AI uses the **Lovable AI Gateway** to generate dynamic AI responses using the **Google Gemini 3 Flash Preview** model.
 
-### AI Features
+The application uses an OpenAI-compatible chat completions format through the gateway. It does not currently make direct calls to the official OpenAI Responses API.
 
-- Meeting transcript analysis
-- Task planning assistance
-- Workplace assistant conversations
+### AI-Powered Features
 
-Implementation includes:
+- **Meeting Notes Summarizer:** Analyses meeting transcripts and generates structured summaries, decisions, action items, and other relevant details.
+- **AI Task Planner:** Classifies tasks using the Eisenhower Matrix and generates prioritisation and scheduling suggestions.
+- **AI Workplace Assistant:** Generates workplace communication and answers questions while maintaining conversation context.
 
-- Secure backend API endpoint
-- Environment variable API key storage
-- Loading states
-- Error handling
-- Retry logic
-- Graceful AI fallback handling
+### Implementation
+
+- Server-side AI requests using TanStack Start server functions
+- Server-only environment variable for gateway authentication
+- Structured response validation using Zod schemas
+- JSON parsing and formatting safeguards
+- Loading indicators and user-facing error messages
+- Retry logic for transient network failures and invalid AI responses
+- Graceful error handling without substituting fabricated AI outputs when generation fails
+
+API credentials are handled on the server rather than exposed in frontend code.
 
 ---
 
@@ -206,7 +215,9 @@ Implementation includes:
 
 ## Phase 1 – Initial Prototype
 
-Initial application included:
+The first version established the application's core structure and interface.
+
+### Initial Features
 
 - Dashboard
 - Meeting Notes Summarizer
@@ -214,214 +225,211 @@ Initial application included:
 - AI Workplace Assistant
 - Modern SaaS interface
 
-This version relied heavily on placeholder responses.
+Early testing revealed that some outputs relied on placeholder content and that several features needed more functional integration.
 
----
+## Phase 2 – Prompt Engineering and AI Improvements
 
-## Phase 2 – Prompt Engineering & AI Improvements
+Development focused on improving AI outputs and replacing unrelated or hardcoded responses with live generation.
 
-The application was refined to remove hardcoded responses.
+### Improvements
 
-Improvements included:
-
-- Better AI prompts
-- Structured outputs
-- Professional formatting
-- Removal of placeholder users
+- Refined AI prompts
+- Structured AI outputs
+- Improved response formatting
+- Live AI generation through the Lovable AI Gateway
 - Guest mode support
-- Improved authentication flow
+- Authentication improvements
+- Response validation and parsing safeguards
+- Error handling and retry logic
 
----
+Testing with different meeting transcripts helped identify cases where generated summaries did not accurately reflect the supplied information.
 
 ## Phase 3 – Workflow Integration
 
-Features were connected together to improve usability.
+The focus shifted towards making the application's features work together.
 
-Added:
+### Improvements
 
 - Meeting Summary → Task Planner integration
-- Persistent Library
+- Persistent Library content
 - Dashboard activity updates
-- Better navigation
 - Improved task management
+- More consistent navigation
+- State persistence across features
+- Improved automatic saving
 
----
+## Phase 4 – Quality Assurance and Debugging
 
-## Phase 4 – Quality Assurance & Debugging
+Testing revealed issues involving AI response parsing, automatic saving, authentication callbacks, and application initialisation.
 
-The project entered an extensive testing phase.
+### Testing Areas
 
-Testing included:
-
-- Long meeting transcripts
+- Short and long meeting transcripts
 - AI-generated summaries
 - Workplace assistant prompts
-- Task planning
-- Authentication
-- Navigation
-- Session persistence
+- Task creation and planning
+- Authentication and session restoration
+- Navigation between pages
+- Library functionality
 - Dashboard behaviour
-- Browser refresh testing
+- Automatic saving
+- Browser refresh and route loading
+
+The testing process involved reproducing issues, examining error messages, refining implementation requirements, and verifying fixes.
 
 ---
 
-# Bugs Identified & Improvements
+# Bugs Identified and Improvements
 
-During testing, several issues were discovered and resolved.
-
-## AI Placeholder Responses
+## 1. AI Placeholder Responses
 
 **Problem**
 
-Meeting summaries and chat responses returned unrelated hardcoded content.
+Meeting summaries and chat responses sometimes returned unrelated, hardcoded content instead of reflecting the user's input.
 
 **Solution**
 
-Connected AI features to live AI generation using structured prompts.
+Replaced hardcoded AI responses with live generation through the Lovable AI Gateway. Added structured prompts, response validation, and error handling to improve relevance and reliability.
 
----
-
-## Hardcoded Demo User
+## 2. Hardcoded Demo User
 
 **Problem**
 
-The application always assumed the user was "Alex."
+The application displayed a fixed example user instead of properly supporting different users.
 
 **Solution**
 
-Implemented Guest Mode and user authentication.
+Introduced guest access and authentication to support different user experiences.
 
----
-
-## Task Planner
+## 3. Task Planner
 
 **Problem**
 
-Preloaded tasks appeared instead of an empty planner.
+Preloaded example tasks made it difficult to distinguish sample content from tasks created by the user.
 
 **Solution**
 
-Replaced with placeholders and user-generated tasks.
+Moved examples into input placeholders and improved task creation so users can organise their own work.
 
----
-
-## Library
+## 4. Library
 
 **Problem**
 
-Saved items were static and could not be reopened.
+Saved items were initially static and could not be reliably reopened or managed.
 
 **Solution**
 
-Implemented functional saved workspaces.
+Improved Library functionality to support saving, reopening, editing, renaming, duplicating, searching, filtering, and deleting content.
 
----
-
-## Dashboard
+## 5. Dashboard
 
 **Problem**
 
-Dashboard displayed permanent sample activity.
+The dashboard displayed permanent sample activity rather than reflecting changes made within the application.
 
 **Solution**
 
-Authenticated users now see real usage statistics and recent activity.
+Connected dashboard activity and statistics to user-specific application data, while retaining labelled sample activity for guest users.
 
----
-
-## State Management
+## 6. State Management
 
 **Problem**
 
-Switching pages caused Meeting Notes, Task Planner, and AI Chat to lose progress.
+Navigating between pages could cause progress in Meeting Notes, Task Planner, and AI Chat to be lost.
 
 **Solution**
 
-Implemented persistent application state and automatic restoration.
+Improved state persistence and restoration so users can move between features while retaining their work.
 
----
-
-## Auto Save
+## 7. Automatic Saving
 
 **Problem**
 
-Users received constant "Unsaved Changes" warnings.
+Frequent unsaved-changes warnings interrupted the user experience and raised concerns about losing work.
 
 **Solution**
 
-Implemented automatic background saving similar to modern SaaS platforms.
+Improved background saving and persistence to reduce unnecessary warnings and preserve user progress.
 
----
-
-## AI Parsing
+## 8. AI Response Parsing
 
 **Problem**
 
-Large meeting transcripts occasionally produced JSON parsing errors.
+Long meeting transcripts occasionally produced malformed responses that triggered JSON parsing errors.
 
 **Solution**
 
-Improved AI response validation and parsing with graceful error handling.
+Improved JSON extraction, response validation, and retry handling to make AI-generated outputs more reliable and failures easier to manage.
 
----
-
-## Authentication
+## 9. Authentication and Session Restoration
 
 **Problem**
 
-Email verification occasionally redirected to an expired callback URL despite successfully creating the account.
+Email verification could occasionally redirect to an expired or invalid callback URL, even after account creation.
 
 **Solution**
 
-Improved authentication callbacks and session restoration.
+Refined authentication callback handling and session restoration to improve the sign-in experience.
+
+## 10. Browser Refresh and Sidebar Context
+
+**Problem**
+
+Refreshing an authenticated page could trigger a generic application error. The browser console identified a `useSidebar must be used within a SidebarProvider` error, indicating that a component was accessing sidebar context before the required provider was available.
+
+**Solution**
+
+Refined the application initialisation and provider hierarchy to ensure sidebar-dependent components render within the required context. This resolved the reported refresh issue and improved application loading after a full browser refresh.
 
 ---
 
 # Technologies Used
 
-- **Lovable**
-- **React**
-- **TypeScript**
-- **Tailwind CSS**
-- **Supabase Authentication**
-- **OpenAI Responses API**
-- **Modern SaaS UI Components**
+- **Lovable** – AI-assisted application development
+- **React** – User interface development
+- **TypeScript** – Type-safe application code
+- **Tailwind CSS** – Styling and responsive layouts
+- **TanStack Start** – Server functions and backend request handling
+- **Supabase Authentication** – User authentication and sessions
+- **Lovable AI Gateway** – AI model access
+- **Google Gemini 3 Flash Preview** – AI response generation
+- **Zod** – Structured response validation
 
 ---
 
-# Skills Demonstrated 
-This project demonstrates practical experience with:
+# Skills Demonstrated
 
-- Business Analysis
-- Prompt Engineering
-- Requirements Gathering
-- AI Integration
-- User Experience Design
-- Functional Testing
-- Debugging
-- Quality Assurance
-- Workflow Design
-- State Management
-- Authentication
-- SaaS Product Design
-- Iterative Software Development
+This project provided practical opportunities to develop and demonstrate skills in:
+
+- Business analysis and requirements refinement
+- Prompt engineering
+- AI-assisted application development
+- Workflow design and integration
+- User experience design
+- Functional testing and quality assurance
+- Debugging and troubleshooting
+- State management and persistence
+- Authentication and session handling
+- Error handling and response validation
+- Iterative software development
+- Translating user needs into functional requirements
 
 ---
 
 # Future Improvements
 
-Potential future enhancements include:
-- Refresh error
-- Username display change
+Potential enhancements include:
+
+- Username display and profile customisation
 - Google Calendar integration
 - Microsoft Outlook integration
-- File uploads
-- Voice transcription
-- Team collaboration
-- Shared workspaces
+- File uploads and document processing
+- Voice transcription and meeting capture
+- Team collaboration and shared workspaces
 - Role-based permissions
-- Analytics dashboard
-- Mobile application
+- More detailed productivity analytics
+- Mobile application support
+- Further testing across routes, devices, and authentication scenarios
 
 ---
 
