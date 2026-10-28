@@ -3,12 +3,12 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
-  useRouter,
   useRouterState,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { Sparkles, Loader2 } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -40,9 +40,8 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error }: { error: Error; reset: () => void }) {
   console.error(error);
-  const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
@@ -59,8 +58,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
-              reset();
+              // Full reload re-runs app initialization (session restore, providers)
+              // and returns the user to the URL they were viewing.
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("_retry", String(Date.now()));
+                window.location.assign(url.toString());
+              } catch {
+                window.location.reload();
+              }
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
@@ -140,15 +146,40 @@ function RootComponent() {
   );
 }
 
+const BARE_PATHS = new Set(["/landing", "/auth", "/auth/callback", "/reset-password", "/"]);
+
+function StartupLoader() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-glow">
+          <Sparkles className="h-5 w-5 animate-pulse" />
+        </div>
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
 function AppFrame() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode } = useAuth();
-  const bare = pathname === "/landing" || pathname === "/auth" || pathname === "/";
 
-  if (bare || mode === "signed_out" || mode === "loading") {
+  // During initialization (session restore) show a splash instead of the
+  // page shell, so sidebar-consuming pages never render without
+  // SidebarProvider — including the server render on a browser refresh.
+  if (mode === "loading") {
+    return <StartupLoader />;
+  }
+
+  const bare = BARE_PATHS.has(pathname);
+
+  if (bare) {
     return <Outlet />;
   }
 
+  // Always mount SidebarProvider for any non-bare route so pages that call
+  // useSidebar never crash — including signed-out states on protected URLs.
   return (
     <SidebarProvider>
       <AppSidebar />
