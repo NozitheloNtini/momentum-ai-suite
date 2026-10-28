@@ -59,8 +59,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
-              router.invalidate();
-              reset();
+              // Full reload re-runs app initialization (session restore, providers)
+              // and returns the user to the URL they were viewing.
+              try {
+                const url = new URL(window.location.href);
+                url.searchParams.set("_retry", String(Date.now()));
+                window.location.assign(url.toString());
+              } catch {
+                window.location.reload();
+              }
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
