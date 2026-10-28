@@ -3,7 +3,6 @@ import {
   Outlet,
   Link,
   createRootRouteWithContext,
-  useRouter,
   useRouterState,
   HeadContent,
   Scripts,
@@ -146,15 +145,40 @@ function RootComponent() {
   );
 }
 
+const BARE_PATHS = new Set(["/landing", "/auth", "/auth/callback", "/reset-password", "/"]);
+
+function StartupLoader() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-primary/70 text-primary-foreground shadow-glow">
+          <Sparkles className="h-5 w-5 animate-pulse" />
+        </div>
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+      </div>
+    </div>
+  );
+}
+
 function AppFrame() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode } = useAuth();
-  const bare = pathname === "/landing" || pathname === "/auth" || pathname === "/";
 
-  if (bare || mode === "signed_out" || mode === "loading") {
+  // During initialization (session restore) show a splash instead of the
+  // page shell, so sidebar-consuming pages never render without
+  // SidebarProvider — including the server render on a browser refresh.
+  if (mode === "loading") {
+    return <StartupLoader />;
+  }
+
+  const bare = BARE_PATHS.has(pathname);
+
+  if (bare) {
     return <Outlet />;
   }
 
+  // Always mount SidebarProvider for any non-bare route so pages that call
+  // useSidebar never crash — including signed-out states on protected URLs.
   return (
     <SidebarProvider>
       <AppSidebar />
